@@ -96,6 +96,13 @@
     <button id="bLA">LA region</button>
     <button id="bLA28">LA28 venues</button>
   </div>
+  <div class="btns"><b style="font-size:.85rem;width:100%">Minimum Google rating</b>
+    <label><input type="radio" name="minrt" value="4.5" checked> 4.5 and up</label>
+    <label><input type="radio" name="minrt" value="4.3"> 4.3 and up</label>
+    <label><input type="radio" name="minrt" value="4.0"> 4.0 and up</label>
+    <label><input type="radio" name="minrt" value="0"> All listed</label>
+    <span style="width:100%;color:#5f5b50;font-size:.8rem">Award-recognized restaurants always show. Restaurants with no rating found show only under "All listed".</span>
+  </div>
   <div class="btns">
     <label><input type="checkbox" id="sat" checked> Satellite</label>
     <label style="width:100%;padding:2px 0;border:none;background:none"><input type="checkbox" id="tAllOverlays"> <b style="font-size:.85rem">Transit</b> <span style="color:#5f5b50">(Metro rail, Metrolink)</span></label>
@@ -215,12 +222,15 @@ Object.keys(COUNTY).forEach(k=>{const slug=k.toLowerCase().replace(/ /g,'-');con
  div.querySelector('[data-cx]').onclick=()=>cities.forEach(c=>{if(ocState[c]){ocState[c].expanded=true;refreshCity(c);}});
  div.querySelector('[data-cg]').onclick=()=>cities.forEach(c=>{if(ocState[c]){ocState[c].expanded=false;refreshCity(c);}});});
 const ocBox=document.getElementById('otherToggles');
+let MINRT=4.5;const passes=x=>x.t==='award'||(x.rt!=null&&x.rt>=MINRT)||MINRT===0;
 R.forEach(x=>{const d=Math.round(14+Math.sqrt(x.rc||50)*0.55);
  const icon=L.divIcon({className:'',html:`<div class="mk${x.c==='Ontario'?'':' oth'}" style="width:${d}px;height:${d}px;background:${CAT[x.t].c}">${x.rt}</div>`,iconSize:[d,d],iconAnchor:[d/2,d/2],popupAnchor:[0,-d/2]});
  const src=(x.src||[]).map(k=>`<a href="${k[1]}" target="_blank" rel="noopener">${k[0]}</a>`).join(' &middot; ');
  const nm=x.web?`<a href="${x.web}" target="_blank" rel="noopener">${x.n}</a>`:x.n;
  const yelp=x.yelp?`<a href="${x.yelp}" target="_blank" rel="noopener">Yelp page</a>`:'';
- L.marker([x.lat,x.lng],{icon}).addTo(OG[x.c][x.t]).bindPopup(`<h2>${nm}</h2><p class="addr">${x.a}. ${x.c}. ${x.cu||''}<br><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.n+', '+x.a+', CA')}" target="_blank" rel="noopener">Open in Google Maps</a>${yelp?' &middot; '+yelp:''}</p>${x.award?`<a class="badge" href="${x.award_url||'#'}" target="_blank" rel="noopener" style="text-decoration:none">${x.award}</a>`:''}<div class="kv"><div><b>${x.rt}</b><span>Rating</span></div><div><b>${(x.rc||0).toLocaleString()}</b><span>Reviews</span></div><div><b style="font-size:1rem">${x.p||CAT[x.t].l}</b><span>Price</span></div></div>${x.note?`<p class="seas"><i>Notes</i>${x.note}</p>`:''}<p class="seas"><i>Sources</i>${src||'Not yet sourced'}</p><p class="note">Rating, review count and price tier as shown by the source cited at the time of collection; they change. Placed by address, approximate.</p>`,{maxWidth:300,autoPanPaddingTopLeft:[10,10],autoPanPaddingBottomRight:[10,60]});});
+ x._m=L.marker([x.lat,x.lng],{icon}).bindPopup(`<h2>${nm}</h2><p class="addr">${x.a}. ${x.c}. ${x.cu||''}<br><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.n+', '+x.a+', CA')}" target="_blank" rel="noopener">Open in Google Maps</a>${yelp?' &middot; '+yelp:''}</p>${x.award?`<a class="badge" href="${x.award_url||'#'}" target="_blank" rel="noopener" style="text-decoration:none">${x.award}</a>`:''}<div class="kv"><div><b>${x.rt}</b><span>Rating</span></div><div><b>${(x.rc||0).toLocaleString()}</b><span>Reviews</span></div><div><b style="font-size:1rem">${x.p||CAT[x.t].l}</b><span>Price</span></div></div>${x.note?`<p class="seas"><i>Notes</i>${x.note}</p>`:''}<p class="seas"><i>Sources</i>${src||'Not yet sourced'}</p><p class="note">Rating, review count and price tier as shown by the source cited at the time of collection; they change. Placed by address, approximate.</p>`,{maxWidth:300,autoPanPaddingTopLeft:[10,10],autoPanPaddingBottomRight:[10,60]});});
+function applyRating(){R.forEach(x=>{const g=OG[x.c][x.t];passes(x)?x._m.addTo(g):g.removeLayer(x._m);});OC_ORDER.forEach(c=>{const st=ocState&&ocState[c];if(!st)return;const hs=R.filter(x=>x.c===c&&passes(x));st.n=hs.length;st.dot.getElement()&&(st.dot.getElement().querySelector('.mk').textContent=hs.length,st.dot.getElement().querySelector('.ct').innerHTML=`${c} &middot; ${hs.length} restaurants`);refreshCity(c);});}
+document.querySelectorAll('input[name=minrt]').forEach(r=>r.onchange=()=>{MINRT=parseFloat(r.value);applyRating();});
 const otCbs=[...ocBox.querySelectorAll('input[data-otier]')];const ocCityCbs=[...countyBox.querySelectorAll('input[data-ocity]')];const ocAll=document.getElementById('tAllOther');
 const cityCb=c=>ocCityCbs.find(x=>x.dataset.ocity===c);
 function setBox(cb,n,len){cb.checked=n===len;cb.indeterminate=n>0&&n<len;}
@@ -234,9 +244,9 @@ OC_ORDER.forEach(city=>{const hs=R.filter(x=>x.c===city);if(!hs.length){ocState[
  dot.bindTooltip(`${city}: ${hs.length} restaurants rated 4.5+, ${rc.toLocaleString()} reviews. Tap to spread.`,{direction:'top',offset:[0,-d/2]});
  const lbl=L.marker([lat,lng],{icon:L.divIcon({className:'',html:`<div class="cgather">${city}: gather restaurants</div>`,iconSize:[160,18],iconAnchor:[80,9]}),zIndexOffset:500});
  dot.on('click',()=>{ocState[city].expanded=true;refreshCity(city);});lbl.on('click',()=>{ocState[city].expanded=false;refreshCity(city);});
- ocState[city]={expanded:false,dot,lbl};});
+ ocState[city]={expanded:false,dot,lbl,n:hs.length};});
 window.setCityCenter=(city,ll)=>{const st=ocState[city];if(!st)return;st.dot.setLatLng(ll);st.lbl.setLatLng(ll);};
-function refreshCity(city){const st=ocState[city];if(!st)return;
+function refreshCity(city){const st=ocState[city];if(!st)return;if(st.n===0){cdG.removeLayer(st.dot);cdG.removeLayer(st.lbl);Object.values(OG[city]).forEach(g=>map.removeLayer(g));return;}
  const cbs=city==='Ontario'?tierCbs:otCbs;const key=city==='Ontario'?'tier':'otier';
  const on=(city==='Ontario'||cityCb(city).checked)&&cbs.some(c=>c.checked);const showDot=on&&!st.expanded,showLbl=on&&st.expanded;
  showDot?st.dot.addTo(cdG):cdG.removeLayer(st.dot);showLbl?st.lbl.addTo(cdG):cdG.removeLayer(st.lbl);
@@ -253,7 +263,7 @@ document.getElementById('ocExpand').onclick=()=>OC_OTHER.forEach(c=>{if(!ocState
 document.getElementById('ocCollapse').onclick=()=>OC_OTHER.forEach(c=>{if(!ocState[c])return;ocState[c].expanded=false;refreshCity(c);});
 document.getElementById('onExpand').onclick=()=>{if(ocState['Ontario'])ocState['Ontario'].expanded=true;refreshCity('Ontario');};
 document.getElementById('onCollapse').onclick=()=>{if(ocState['Ontario'])ocState['Ontario'].expanded=false;refreshCity('Ontario');};
-OC_ORDER.forEach(refreshCity);
+applyRating();
 map.fitBounds([[33.925,-117.683],[34.095,-117.52]]);
 /* collapsible legend sections */
 function makeSection(masterId){const m=document.getElementById(masterId);if(!m)return;const head=m.closest('label');const box=head.parentNode;head.classList.add('sechead');
