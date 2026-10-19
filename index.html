@@ -7,8 +7,8 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
-<script src="districts.js?v=1"></script>
-<script src="restaurants.js?v=1792398279"></script>
+<script src="districts.js?v=2"></script>
+<script src="restaurants.js?v=1792398455"></script>
 <script src="la_transit.js?v=1792394945"></script>
 <style>
   html,body{height:100%;margin:0;font-family:"Times New Roman",Times,serif;color:#1d1c19;background:#111}
@@ -76,6 +76,7 @@
   .oc label{display:inline-block;width:calc(50% - 4px);border:none;padding:2px 0;background:none}.oc label[style]{width:100%}
   .mk.oth{border:1.5px solid #fff;outline:1.5px dashed #1d1c19}
   .cdot{position:relative}.cdot .mk{position:absolute;left:50%;top:0;transform:translateX(-50%);cursor:pointer}.cdot .ct{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(31,78,121,.92);color:#fff;border-radius:3px;padding:1px 6px;font:italic 11px "Times New Roman",Times,serif;box-shadow:0 1px 3px rgba(0,0,0,.5);cursor:pointer}
+.dpill{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.96);border:2px solid var(--c);border-radius:14px;padding:2px 9px 2px 6px;font:italic 12px "Times New Roman",Times,serif;color:#1f2a3a;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.45);cursor:pointer}.dpill b{display:inline-block;width:16px;height:16px;border-radius:50%;background:var(--c);color:#fff;font:bold 10px/16px "Times New Roman",Times,serif;text-align:center;font-style:normal}
   .cgather{background:rgba(255,255,255,.95);color:#1f4e79;border:1px solid #1f4e79;border-radius:3px;padding:1px 6px;font:11px "Times New Roman",Times,serif;white-space:nowrap;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.4)}
   .grp.open{display:flex;flex-wrap:wrap;gap:4px}
   .btns>label.sechead{display:flex;align-items:center;width:100%;border:none;background:none;padding:2px 0}
@@ -209,11 +210,17 @@ document.getElementById('bLA28').onclick=()=>{const vs=TRANSIT.venues.filter(v=>
 document.getElementById('bCity').onclick=()=>map.fitBounds([[33.925,-117.683],[34.095,-117.52]]);
 /* dining districts */
 const distG=L.layerGroup().addTo(map);const distTogs=document.getElementById('distToggles');const DKIND={'Historic downtown':'#e65100','Lifestyle center':'#ad1457','Food hall':'#00838f','Regional center':'#546e7a'};
-const distLayers={};DISTRICTS.forEach(d=>{const col=DKIND[d.kind]||'#777';const poly=L.polygon(d.poly,{color:col,weight:2,dashArray:'4 3',fill:true,fillColor:col,fillOpacity:.18});
- poly.bindTooltip(d.n,{sticky:true}).bindPopup(`<h2><a href="${d.web}" target="_blank" rel="noopener">${d.n}</a></h2><p class="addr">${d.c}. ${d.kind}. From the Ontario Convention Center: ${d.ont}.</p><p class="seas">${d.desc}</p><p class="seas"><i>Anchors</i>${d.anchors}</p><p class="note">Outline drawn around the restaurant cluster, approximate; drive times are typical off-peak estimates.</p>`,{maxWidth:300});
- distLayers[d.n]=poly.addTo(distG);
- const lab=document.createElement('label');lab.innerHTML=`<input type="checkbox" data-dist="${d.n}" checked> <span style="color:${col};font-weight:700">&#9638;</span> ${d.n.split(' and ')[0].split(' (')[0]} <span style="color:#5f5b50">(${d.c}, ${d.ont.split(',')[1].trim()})</span>`;distTogs.appendChild(lab);
- lab.querySelector('input').onchange=e=>{e.target.checked?poly.addTo(distG):distG.removeLayer(poly);syncDist();};});
+const distLayers={};DISTRICTS.forEach(d=>{const col=DKIND[d.kind]||'#777';const grp=L.layerGroup();
+ const poly=L.polygon(d.poly,{color:col,weight:2.5,dashArray:'4 3',fill:true,fillColor:col,fillOpacity:.22}).addTo(grp);
+ const ctr=poly.getBounds().getCenter();const q=encodeURIComponent(d.n.split(' (')[0]+', '+d.c+', CA');
+ const nOn=()=>R.filter(x=>inDist(x)===d.n&&passes(x)).length;
+ const card=()=>`<h2><a href="${d.web}" target="_blank" rel="noopener">${d.n}</a></h2><p class="addr">${d.c}. ${d.kind}.</p><p class="addr" style="line-height:1.7"><a href="${d.web}" target="_blank" rel="noopener">District site</a> &middot; <a href="${d.city}" target="_blank" rel="noopener">${d.cityl}</a> &middot; <a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">Google Maps</a> &middot; <a href="https://www.google.com/maps/dir/?api=1&destination=${q}" target="_blank" rel="noopener">Directions</a>${d.ig?` &middot; <a href="${d.ig}" target="_blank" rel="noopener">Instagram</a>`:''}</p><div class="kv"><div><b>${nOn()}</b><span>On this map</span></div><div><b style="font-size:1rem">${d.ont.split(',')[1].trim()}</b><span>From Conv. Ctr (${d.ont.split(',')[0]})</span></div><div><b style="font-size:1rem">${d.kind.split(' ')[0]}</b><span>Kind</span></div></div><p class="seas">${d.desc}</p><p class="seas"><i>Anchors</i>${d.anchors}</p><p class="seas"><i>Transit</i>${d.transit}</p><p class="seas"><i>Events</i>${d.events}</p><p class="seas"><i>Parking</i>${d.parking}</p><p class="note">Outline drawn around the restaurant cluster, approximate; drive times are typical off-peak estimates from the Ontario Convention Center. "On this map" counts restaurants inside the outline at the current rating cutoff.</p>`;
+ poly.bindTooltip(d.n,{sticky:true}).bindPopup(card,{maxWidth:300,autoPanPaddingTopLeft:[10,10],autoPanPaddingBottomRight:[10,60]});
+ const pin=L.marker(ctr,{icon:L.divIcon({className:'',html:`<div class="dpill" style="--c:${col}"><b>&#9832;</b>${d.n.split(' and ')[0].split(' (')[0]}</div>`,iconSize:[10,22],iconAnchor:[5,11]}),zIndexOffset:400}).addTo(grp);
+ pin.bindPopup(card,{maxWidth:300,autoPanPaddingTopLeft:[10,10],autoPanPaddingBottomRight:[10,60]});
+ distLayers[d.n]=grp.addTo(distG);
+ const lab=document.createElement('label');lab.innerHTML=`<input type="checkbox" data-dist="${d.n}" checked> <span style="color:${col};font-weight:700">&#9832;</span> ${d.n.split(' and ')[0].split(' (')[0]} <span style="color:#5f5b50">(${d.c}, ${d.ont.split(',')[1].trim()})</span>`;distTogs.appendChild(lab);
+ lab.querySelector('input').onchange=e=>{e.target.checked?grp.addTo(distG):distG.removeLayer(grp);syncDist();};});
 const distCbs=[...distTogs.querySelectorAll('input[data-dist]')];const distAll=document.getElementById('tAllDist');
 function syncDist(){const k=distCbs.filter(c=>c.checked).length;distAll.checked=k===distCbs.length;distAll.indeterminate=k>0&&k<distCbs.length;}
 distAll.onchange=e=>{const on=e.target.checked;distCbs.forEach(cb=>{if(cb.checked!==on){cb.checked=on;cb.onchange({target:cb});}});syncDist();};
