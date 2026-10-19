@@ -10,10 +10,10 @@
 <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@0.14.1/dist/Leaflet.GoogleMutant.js"></script>
 <script>const GKEY="AIzaSyBv-3fjCEu5UzXlyiA2OGjzyUl3tprLpxY";window.gmReady=function(){window._gmLoaded=true;if(window.onGoogleReady)window.onGoogleReady();};</script>
 <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBv-3fjCEu5UzXlyiA2OGjzyUl3tprLpxY&loading=async&callback=gmReady&v=weekly"></script>
-<script src="district_restaurants.js?v=1792440882"></script>
-<script src="districts.js?v=1792440882"></script>
-<script src="restaurants.js?v=1792440882"></script>
-<script src="la_transit.js?v=1792440882"></script>
+<script src="district_restaurants.js?v=1792440987"></script>
+<script src="districts.js?v=1792440987"></script>
+<script src="restaurants.js?v=1792440987"></script>
+<script src="la_transit.js?v=1792440987"></script>
 <style>
   html,body{height:100%;margin:0;font-family:"Times New Roman",Times,serif;color:#1d1c19;background:#111}
   #map{position:absolute;inset:0}
@@ -320,10 +320,10 @@ function syncDist(){const k=distCbs.filter(c=>c.checked).length;distAll.checked=
 distAll.onchange=e=>{const on=e.target.checked;distCbs.forEach(cb=>{if(cb.checked!==on){cb.checked=on;cb.onchange({target:cb});}});syncDist();};
 /* live Google ratings for a whole district roster: fetched when the list is opened or sorted by rating, 4 at a time, cached for the session */
 function liveDistrict(name,force){if((LIVE_DONE[name]&&!force)||typeof livePlace!=='function')return;LIVE_DONE[name]=true;
- const rows=(typeof DR!=='undefined'?DR:[]).filter(r=>r.dist===name&&(!r._live||r._miss));let i=0,done=0;rows.forEach(r=>{if(r._miss){delete PLACE_CACHE[r.n+'|'+r.a+(r.a.includes(r.c)?'':', '+r.c)+', CA|'];}});LIVE_PROG[name]={done:0,total:rows.length};
+ const rows=(typeof DR!=='undefined'?DR:[]).filter(r=>r.dist===name&&(!r._live||r._miss));let i=0,done=0;rows.forEach(r=>{if(r._miss){Object.keys(PLACE_CACHE).forEach(k=>{if(k.startsWith(r.n+'|'))delete PLACE_CACHE[k];});}});LIVE_PROG[name]={done:0,total:rows.length};
  const rerender=()=>{if(DLIST_RENDER[name])DLIST_RENDER[name]();if(rpDist===name)renderRoster();};
  let t=null;const bump=()=>{done++;LIVE_PROG[name].done=done;clearTimeout(t);t=setTimeout(rerender,done>=rows.length?0:400);};
- const worker=async()=>{while(i<rows.length){const r=rows[i++];try{let pl=await livePlace(r.n,r.a+(r.a.includes(r.c)?'':', '+r.c)+', CA',r.lat,r.lng);
+ const worker=async()=>{while(i<rows.length){const r=rows[i++];try{const addr=/\bCA\b/.test(r.a)?r.a.replace(/,?\s*CA\s*\d{0,5}\s*$/,'')+', CA':r.a+(r.a.includes(r.c)?'':', '+r.c)+', CA';let pl=await livePlace(r.n,addr,r.lat,r.lng);
    if(!pl||pl.rating==null){const alt=await livePlace(r.n.replace(/\s*\(.*?\)\s*/g,' ').trim(),r.c+', CA',r.lat,r.lng,6000);if(alt&&alt.rating!=null)pl=alt;}
    if(pl&&pl.rating!=null){r.rt=pl.rating;r.rc=pl.userRatingCount||0;r.rating_src='Google (live)';if(pl.priceLevel&&PRICE[pl.priceLevel])r.p=PRICE[pl.priceLevel];r._miss=false;}
    else{r._miss=pl?'norating':'nomatch';console.warn('no Google rating for',r.n,r._miss);}
