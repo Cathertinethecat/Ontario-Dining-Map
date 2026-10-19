@@ -7,7 +7,8 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
-<script src="restaurants.js?v=1792397873"></script>
+<script src="districts.js?v=1"></script>
+<script src="restaurants.js?v=1792398279"></script>
 <script src="la_transit.js?v=1792394945"></script>
 <style>
   html,body{height:100%;margin:0;font-family:"Times New Roman",Times,serif;color:#1d1c19;background:#111}
@@ -90,7 +91,7 @@
 <div class="panel" id="panel">
   <h1 id="ptog">Legend <small id="pind">tap for legend &amp; controls</small></h1>
   <div class="body">
-  <p>Upscale restaurants within about 10 miles of Ontario (plus Pomona) rated 4.5 or higher on Google with 200+ reviews, and every award-recognized restaurant across the wider region. Markers sized by review count and colored by tier; the rating is shown in the circle. Tap a marker for details; names link to the restaurant's site.</p>
+  <p>Upscale restaurants within about 10 miles of Ontario (plus Pomona) rated 4.5 or higher on Google with 200+ reviews, and every award-recognized restaurant across the wider region. Markers sized by review count and colored by tier; the rating is shown in the circle. Shaded outlines are dining districts, the walkable clusters a visitor would head to for dinner. Tap a marker for details; names link to the restaurant's site.</p>
   <div class="btns"><b style="font-size:.85rem;width:100%">Zoom to area</b>
     <button id="bCity">Ontario</button>
     <button id="bLA">LA region</button>
@@ -130,11 +131,12 @@
     <label><input type="checkbox" data-otier="upscale" checked> <span style="color:#c98a1c">&#9679;</span> Upscale</label>
     <label><input type="checkbox" data-otier="mid" checked> <span style="color:#2f7d4e">&#9679;</span> Mid-range, top rated</label>
     <div id="countyBox" style="width:100%"></div></div>
+  <div class="btns" id="distToggles"><label style="width:100%;padding:2px 0"><input type="checkbox" id="tAllDist" checked> <b style="font-size:.85rem">Dining districts</b> <span style="color:#5f5b50">(walkable clusters; tap an outline)</span></label></div>
   <div class="btns" id="cityToggles"><label style="width:100%;padding:2px 0"><input type="checkbox" id="tAllCity" checked> <b style="font-size:.85rem">City limits</b> <span style="color:#5f5b50">(all on/off)</span></label></div>
   <p class="note"><a href="#" id="aboutTog">About the data</a></p>
   <div id="about" style="display:none">
     <p class="note" id="aboutText"><b>Restaurants.</b> 69 restaurants: every $$$ and $$$$ restaurant found within about 10 miles of Ontario plus Pomona (OpenTable, TripAdvisor, Wanderlog and local press rosters, October 2026), plus mid-range ($$) sit-down restaurants in the same ring rated 4.5 or higher with 300+ reviews where a rating could be confirmed, and every award-recognized restaurant found across the wider region (Michelin Guide California, Wine Spectator Restaurant Awards; no James Beard recognition found in the region). Ratings and review counts are a snapshot quoted from the source named on each card: Google (as quoted by Wanderlog) where available, otherwise OpenTable, TripAdvisor or Restaurantji. Google and Yelp do not allow their ratings to be collected directly, so some ratings are from other sites and say so. Chains with more than about 20 locations are left out unless they are upscale steakhouse brands. Menu, Instagram, Facebook and reservation links and photos are taken from each restaurant's own site or its listings where found; blanks mean none was found, not that none exists. Positions placed by address, approximate.</p>
-    <p class="note"><b>Boundaries and transit.</b> City limits are the official boundaries from the Board of Equalization layer, loaded live; gray hatched areas are unincorporated county land. LA28 venues and rail are the same layers as the Ontario Hotel Map.</p>
+    <p class="note"><b>Dining districts.</b> Ten walkable restaurant clusters (historic downtowns, lifestyle centers, a food hall) outlined approximately around the cluster, with drive time from the Ontario Convention Center. Ontario's own downtown is the thinnest district in the ring relative to its hotel inventory. <b>Boundaries and transit.</b> City limits are the official boundaries from the Board of Equalization layer, loaded live; gray hatched areas are unincorporated county land. LA28 venues and rail are the same layers as the Ontario Hotel Map.</p>
   </div>
   </div>
 </div>
@@ -205,6 +207,16 @@ ovAll.onchange=e=>{const on=e.target.checked;ovCbs.forEach(cb=>{if(cb.checked!==
 document.getElementById('bLA').onclick=()=>map.fitBounds([[33.55,-118.60],[34.45,-116.60]]);
 document.getElementById('bLA28').onclick=()=>{const vs=TRANSIT.venues.filter(v=>v[3]>33.5&&v[4]>-118.7);map.fitBounds(vs.map(v=>[v[3],v[4]]),{padding:[20,20]});};
 document.getElementById('bCity').onclick=()=>map.fitBounds([[33.925,-117.683],[34.095,-117.52]]);
+/* dining districts */
+const distG=L.layerGroup().addTo(map);const distTogs=document.getElementById('distToggles');const DKIND={'Historic downtown':'#e65100','Lifestyle center':'#ad1457','Food hall':'#00838f','Regional center':'#546e7a'};
+const distLayers={};DISTRICTS.forEach(d=>{const col=DKIND[d.kind]||'#777';const poly=L.polygon(d.poly,{color:col,weight:2,dashArray:'4 3',fill:true,fillColor:col,fillOpacity:.18});
+ poly.bindTooltip(d.n,{sticky:true}).bindPopup(`<h2><a href="${d.web}" target="_blank" rel="noopener">${d.n}</a></h2><p class="addr">${d.c}. ${d.kind}. From the Ontario Convention Center: ${d.ont}.</p><p class="seas">${d.desc}</p><p class="seas"><i>Anchors</i>${d.anchors}</p><p class="note">Outline drawn around the restaurant cluster, approximate; drive times are typical off-peak estimates.</p>`,{maxWidth:300});
+ distLayers[d.n]=poly.addTo(distG);
+ const lab=document.createElement('label');lab.innerHTML=`<input type="checkbox" data-dist="${d.n}" checked> <span style="color:${col};font-weight:700">&#9638;</span> ${d.n.split(' and ')[0].split(' (')[0]} <span style="color:#5f5b50">(${d.c}, ${d.ont.split(',')[1].trim()})</span>`;distTogs.appendChild(lab);
+ lab.querySelector('input').onchange=e=>{e.target.checked?poly.addTo(distG):distG.removeLayer(poly);syncDist();};});
+const distCbs=[...distTogs.querySelectorAll('input[data-dist]')];const distAll=document.getElementById('tAllDist');
+function syncDist(){const k=distCbs.filter(c=>c.checked).length;distAll.checked=k===distCbs.length;distAll.indeterminate=k>0&&k<distCbs.length;}
+distAll.onchange=e=>{const on=e.target.checked;distCbs.forEach(cb=>{if(cb.checked!==on){cb.checked=on;cb.onchange({target:cb});}});syncDist();};
 /* restaurants: R array in restaurants.js. Fields: c city, t tier (fine/upscale/mid), n name, a address, cu cuisine, rt rating, rc review count, p price string, lat, lng, web, yelp, src [[label,url]], note, badge */
 const tierCbs=[...document.querySelectorAll('#tierToggles input[data-tier]')];
 const ONT=[34.0633,-117.6509];const dist=c=>{const hs=R.filter(x=>x.c===c);const la=hs.reduce((a,x)=>a+x.lat,0)/hs.length,ln=hs.reduce((a,x)=>a+x.lng,0)/hs.length;return Math.hypot(la-ONT[0],(ln-ONT[1])*0.83);};
@@ -222,13 +234,14 @@ Object.keys(COUNTY).forEach(k=>{const slug=k.toLowerCase().replace(/ /g,'-');con
  div.querySelector('[data-cx]').onclick=()=>cities.forEach(c=>{if(ocState[c]){ocState[c].expanded=true;refreshCity(c);}});
  div.querySelector('[data-cg]').onclick=()=>cities.forEach(c=>{if(ocState[c]){ocState[c].expanded=false;refreshCity(c);}});});
 const ocBox=document.getElementById('otherToggles');
+function inDist(x){for(const d of DISTRICTS){const p=d.poly;let ins=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const yi=p[i][0],xi=p[i][1],yj=p[j][0],xj=p[j][1];if(((yi>x.lat)!==(yj>x.lat))&&(x.lng<(xj-xi)*(x.lat-yi)/(yj-yi)+xi))ins=!ins;}if(ins)return d.n;}return null;}
 let MINRT=4.5;const passes=x=>x.t==='award'||(x.rt!=null&&x.rt>=MINRT)||MINRT===0;
 R.forEach(x=>{const d=Math.round(14+Math.sqrt(x.rc||50)*0.55);
  const icon=L.divIcon({className:'',html:`<div class="mk${x.c==='Ontario'?'':' oth'}" style="width:${d}px;height:${d}px;background:${CAT[x.t].c}">${x.rt}</div>`,iconSize:[d,d],iconAnchor:[d/2,d/2],popupAnchor:[0,-d/2]});
  const src=(x.src||[]).map(k=>`<a href="${k[1]}" target="_blank" rel="noopener">${k[0]}</a>`).join(' &middot; ');
  const nm=x.web?`<a href="${x.web}" target="_blank" rel="noopener">${x.n}</a>`:x.n;
  const yelp=x.yelp?`<a href="${x.yelp}" target="_blank" rel="noopener">Yelp page</a>`:'';
- x._m=L.marker([x.lat,x.lng],{icon}).bindPopup(`${x.img?`<img class="hphoto" src="${x.img}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}<h2>${nm}</h2><p class="addr">${x.a}. ${x.c}. ${x.cu||''}${x.rs?' Rating source: '+x.rs+'.':''}</p><p class="addr" style="line-height:1.7"><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.n+', '+x.a+', CA')}" target="_blank" rel="noopener">Google listing</a> &middot; <a href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(x.n+', '+x.a+', CA')}" target="_blank" rel="noopener">Directions</a>${x.menu?` &middot; <a href="${x.menu}" target="_blank" rel="noopener">Menu</a>`:''}${x.ig?` &middot; <a href="${x.ig}" target="_blank" rel="noopener">Instagram</a>`:''}${x.fb?` &middot; <a href="${x.fb}" target="_blank" rel="noopener">Facebook</a>`:''}${x.ot?` &middot; <a href="${x.ot}" target="_blank" rel="noopener">Reserve</a>`:''}${yelp?' &middot; '+yelp:''}</p>${x.award?`<a class="badge" href="${x.award_url||'#'}" target="_blank" rel="noopener" style="text-decoration:none">${x.award}</a>`:''}<div class="kv"><div><b>${x.rt==null?'?':x.rt}</b><span>Rating${x.rs?' ('+x.rs.replace('Google via Wanderlog','Google')+')':''}</span></div><div><b>${(x.rc||0).toLocaleString()}</b><span>Reviews</span></div><div><b style="font-size:1rem">${x.p||CAT[x.t].l}</b><span>Price</span></div></div>${x.note?`<p class="seas"><i>Notes</i>${x.note}</p>`:''}<p class="seas"><i>Sources</i>${src||'Not yet sourced'}</p><p class="note">Rating, review count and price tier as shown by the source cited at the time of collection; they change. Placed by address, approximate.</p>`,{maxWidth:300,autoPanPaddingTopLeft:[10,10],autoPanPaddingBottomRight:[10,60]});});
+ x._m=L.marker([x.lat,x.lng],{icon}).bindPopup(`${x.img?`<img class="hphoto" src="${x.img}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}<h2>${nm}</h2><p class="addr">${x.a}. ${x.c}. ${x.cu||''}${x.rs?' Rating source: '+x.rs+'.':''}${inDist(x)?' In the '+inDist(x)+' district.':''}</p><p class="addr" style="line-height:1.7"><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.n+', '+x.a+', CA')}" target="_blank" rel="noopener">Google listing</a> &middot; <a href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(x.n+', '+x.a+', CA')}" target="_blank" rel="noopener">Directions</a>${x.menu?` &middot; <a href="${x.menu}" target="_blank" rel="noopener">Menu</a>`:''}${x.ig?` &middot; <a href="${x.ig}" target="_blank" rel="noopener">Instagram</a>`:''}${x.fb?` &middot; <a href="${x.fb}" target="_blank" rel="noopener">Facebook</a>`:''}${x.ot?` &middot; <a href="${x.ot}" target="_blank" rel="noopener">Reserve</a>`:''}${yelp?' &middot; '+yelp:''}</p>${x.award?`<a class="badge" href="${x.award_url||'#'}" target="_blank" rel="noopener" style="text-decoration:none">${x.award}</a>`:''}<div class="kv"><div><b>${x.rt==null?'?':x.rt}</b><span>Rating${x.rs?' ('+x.rs.replace('Google via Wanderlog','Google')+')':''}</span></div><div><b>${(x.rc||0).toLocaleString()}</b><span>Reviews</span></div><div><b style="font-size:1rem">${x.p||CAT[x.t].l}</b><span>Price</span></div></div>${x.note?`<p class="seas"><i>Notes</i>${x.note}</p>`:''}<p class="seas"><i>Sources</i>${src||'Not yet sourced'}</p><p class="note">Rating, review count and price tier as shown by the source cited at the time of collection; they change. Placed by address, approximate.</p>`,{maxWidth:300,autoPanPaddingTopLeft:[10,10],autoPanPaddingBottomRight:[10,60]});});
 function applyRating(){R.forEach(x=>{const g=OG[x.c][x.t];passes(x)?x._m.addTo(g):g.removeLayer(x._m);});OC_ORDER.forEach(c=>{const st=ocState&&ocState[c];if(!st)return;const hs=R.filter(x=>x.c===c&&passes(x));st.n=hs.length;const rc=hs.reduce((a,x)=>a+(x.rc||0),0);st.dot.setIcon(L.divIcon({className:'',html:`<div class="cdot" style="width:${st.w}px;height:${st.d+22}px"><div class="mk${c==='Ontario'?'':' oth'}" style="width:${st.d}px;height:${st.d}px;background:${CAT[st.top].c}">${hs.length}</div><div class="ct" style="top:${st.d+2}px">${c} &middot; ${hs.length} restaurant${hs.length===1?'':'s'}</div></div>`,iconSize:[st.w,st.d+22],iconAnchor:[st.w/2,st.d/2]}));st.dot.setTooltipContent(`${c}: ${hs.length} restaurant${hs.length===1?'':'s'} shown at this rating cutoff, ${rc.toLocaleString()} reviews. Tap to spread.`);refreshCity(c);});}
 document.querySelectorAll('input[name=minrt]').forEach(r=>r.onchange=()=>{MINRT=parseFloat(r.value);applyRating();});
 const otCbs=[...ocBox.querySelectorAll('input[data-otier]')];const ocCityCbs=[...countyBox.querySelectorAll('input[data-ocity]')];const ocAll=document.getElementById('tAllOther');
@@ -270,7 +283,7 @@ function makeSection(masterId){const m=document.getElementById(masterId);if(!m)r
  const wrap=document.createElement('div');wrap.className='grp';let n=head.nextSibling;while(n){const nx=n.nextSibling;if(n.nodeType===1||(n.nodeType===3&&n.textContent.trim()))wrap.appendChild(n);n=nx;}box.appendChild(wrap);
  const b=document.createElement('button');b.type='button';b.className='secbtn';b.setAttribute('aria-label','expand');b.textContent='\u25B8';head.insertBefore(b,head.firstChild);
  b.onclick=e=>{e.preventDefault();e.stopPropagation();const o=wrap.classList.toggle('open');b.textContent=o?'\u25BE':'\u25B8';b.setAttribute('aria-label',o?'collapse':'expand');};}
-['tAllOverlays','tLA28','tAllHotels','tAllOther','tAllCity'].forEach(makeSection);Object.keys(COUNTY).forEach(k=>makeSection('oc_'+k.toLowerCase().replace(/ /g,'-')+'_all'));
+['tAllOverlays','tLA28','tAllHotels','tAllOther','tAllDist','tAllCity'].forEach(makeSection);Object.keys(COUNTY).forEach(k=>makeSection('oc_'+k.toLowerCase().replace(/ /g,'-')+'_all'));
 </script>
 </body>
 </html>
