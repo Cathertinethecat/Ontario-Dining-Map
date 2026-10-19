@@ -10,10 +10,10 @@
 <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@0.14.1/dist/Leaflet.GoogleMutant.js"></script>
 <script>const GKEY="AIzaSyBv-3fjCEu5UzXlyiA2OGjzyUl3tprLpxY";window.gmReady=function(){window._gmLoaded=true;if(window.onGoogleReady)window.onGoogleReady();};</script>
 <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBv-3fjCEu5UzXlyiA2OGjzyUl3tprLpxY&loading=async&callback=gmReady&v=weekly"></script>
-<script src="district_restaurants.js?v=1792439210"></script>
-<script src="districts.js?v=1792439210"></script>
-<script src="restaurants.js?v=1792439210"></script>
-<script src="la_transit.js?v=1792439210"></script>
+<script src="district_restaurants.js?v=1792440407"></script>
+<script src="districts.js?v=1792440407"></script>
+<script src="restaurants.js?v=1792440407"></script>
+<script src="la_transit.js?v=1792440407"></script>
 <style>
   html,body{height:100%;margin:0;font-family:"Times New Roman",Times,serif;color:#1d1c19;background:#111}
   #map{position:absolute;inset:0}
@@ -185,7 +185,7 @@
       <li>Walkable restaurant clusters: historic downtowns, lifestyle centers, a food hall; outlines drawn around the cluster, not legal boundaries, centered on published coordinates where available <a href="#dref7" class="cite">[7]</a> <a href="#dref8" class="cite">[8]</a>.</li>
       <li>Drive times are typical off-peak estimates from the Ontario Convention Center.</li>
       <li>District rosters (250 restaurants) come from each district's own directory plus Wanderlog, TripAdvisor and Yelp search results; positions are schematic along the main street or around the center <a href="#dref9" class="cite">[9]</a>.</li>
-      <li>Roster cards fetch the live Google rating the same way when opened; the stored snapshot (Google via Wanderlog, Restaurantji or TripAdvisor, where found) is the fallback. Ratings with fewer than 20 reviews are greyed.</li>
+      <li>Opening a district list (or sorting a fold-out by rating) fetches live Google ratings for every restaurant in that district and re-sorts; roster cards fetch the same way when opened; the stored snapshot (Google via Wanderlog, Restaurantji or TripAdvisor, where found) is the fallback. Ratings with fewer than 20 reviews are greyed.</li>
       <li>District facts (transit, events, parking) were checked against the district and city sites, Metrolink, SBCTA and Wikipedia in October 2026; each district card lists its sources.</li>
       <li>Ontario's own downtown is the thinnest district in the ring relative to its hotel inventory.</li>
     </ul>
@@ -292,6 +292,7 @@ document.getElementById('bLA28').onclick=()=>{const vs=TRANSIT.venues.filter(v=>
 document.getElementById('bCity').onclick=()=>map.fitBounds([[33.925,-117.683],[34.095,-117.52]]);
 /* dining districts */
 const distG=L.layerGroup().addTo(map);const distTogs=document.getElementById('distToggles');const DKIND={'Historic downtown':'#e65100','Lifestyle center':'#ad1457','Food hall':'#00838f','Regional center':'#546e7a'};
+const DLIST_RENDER={};const LIVE_DONE={};let LIVE_PROG={};
 const distLayers={};DISTRICTS.forEach(d=>{const col=DKIND[d.kind]||'#777';const grp=L.layerGroup();
  const poly=L.polygon(d.poly,{color:col,weight:2.5,dashArray:'4 3',fill:true,fillColor:col,fillOpacity:.22}).addTo(grp);
  const ctr=poly.getBounds().getCenter();const q=encodeURIComponent(d.n.split(' (')[0]+', '+d.c+', CA');
@@ -308,15 +309,24 @@ const distLayers={};DISTRICTS.forEach(d=>{const col=DKIND[d.kind]||'#777';const 
  const lab=document.createElement('div');lab.className='oc';lab.innerHTML=`<label style="width:100%;padding:2px 0"><input type="checkbox" id="${slug}" data-dist="${d.n}" checked> <span style="color:${col};font-weight:700">&#9832;</span> <b style="font-size:.85rem">${d.n.split(' and ')[0].split(' (')[0]}</b> <span style="color:#5f5b50">(${d.c}, ${d.ont.split(',')[1].trim()}, ${rows.length} listed)</span></label><div class="btns" style="margin:2px 0 4px;width:100%"><button type="button" data-dz="${d.n}">Zoom to district</button><button type="button" data-ol="${d.n}">Open full list</button><button type="button" data-sort="az">A to Z</button><button type="button" data-sort="rt">By rating</button></div><div class="dlist"></div>`;distTogs.appendChild(lab);
  const list=lab.querySelector('.dlist');let sortBy='az';
  const render=()=>{const w=x=>x.rt==null?-1:(x.rc||0)<20?x.rt-10:x.rt;const rs=rows.slice().sort((x,y)=>sortBy==='rt'?((w(y)-w(x))||((y.rc||0)-(x.rc||0))||x.n.localeCompare(y.n)):x.n.localeCompare(y.n));
-  list.innerHTML=rs.map(r=>`<a data-i="${rows.indexOf(r)}">${r.n}${r.rt!=null?` <span style="color:#5f5b50">${r.rt}</span>`:''}</a>`).join('')||'<span style="color:#5f5b50">Roster not yet loaded.</span>';
+  list.innerHTML=rs.map(r=>`<a data-i="${rows.indexOf(r)}">${r.n}${r.rt!=null?` <span style="color:${(r.rc||0)<20?'#9e9e9e':'#5f5b50'}">${r.rt}</span>`:''}</a>`).join('')||'<span style="color:#5f5b50">Roster not yet loaded.</span>';
   list.querySelectorAll('a').forEach(x=>x.onclick=()=>{const r=rows[+x.dataset.i];map.setView([r.lat,r.lng],17);(()=>{const pp=L.popup({maxWidth:300,autoPanPaddingTopLeft:[10,10],autoPanPaddingBottomRight:[10,60]}).setLatLng([r.lat,r.lng]).setContent(rcard(r));pp._rdata=r;pp.openOn(map);})();});
   lab.querySelectorAll('[data-sort]').forEach(bn=>bn.style.fontWeight=bn.dataset.sort===sortBy?'700':'400');};
- lab.querySelectorAll('[data-sort]').forEach(bn=>bn.onclick=()=>{sortBy=bn.dataset.sort;render();});render();
+ DLIST_RENDER[d.n]=render;lab.querySelectorAll('[data-sort]').forEach(bn=>bn.onclick=()=>{sortBy=bn.dataset.sort;render();if(sortBy==='rt')liveDistrict(d.n);});render();
  lab.querySelector('input').onchange=e=>{e.target.checked?grp.addTo(distG):distG.removeLayer(grp);syncDist();};
  lab.querySelector('[data-dz]').onclick=()=>map.fitBounds(poly.getBounds(),{padding:[20,20],maxZoom:17});lab.querySelector('[data-ol]').onclick=()=>openRoster(d.n);});
 const distCbs=[...distTogs.querySelectorAll('input[data-dist]')];const distAll=document.getElementById('tAllDist');
 function syncDist(){const k=distCbs.filter(c=>c.checked).length;distAll.checked=k===distCbs.length;distAll.indeterminate=k>0&&k<distCbs.length;}
 distAll.onchange=e=>{const on=e.target.checked;distCbs.forEach(cb=>{if(cb.checked!==on){cb.checked=on;cb.onchange({target:cb});}});syncDist();};
+/* live Google ratings for a whole district roster: fetched when the list is opened or sorted by rating, 4 at a time, cached for the session */
+function liveDistrict(name){if(LIVE_DONE[name]||typeof livePlace!=='function')return;LIVE_DONE[name]=true;
+ const rows=(typeof DR!=='undefined'?DR:[]).filter(r=>r.dist===name&&!r._live);let i=0,done=0;LIVE_PROG[name]={done:0,total:rows.length};
+ const rerender=()=>{if(DLIST_RENDER[name])DLIST_RENDER[name]();if(rpDist===name)renderRoster();};
+ let t=null;const bump=()=>{done++;LIVE_PROG[name].done=done;clearTimeout(t);t=setTimeout(rerender,done>=rows.length?0:400);};
+ const worker=async()=>{while(i<rows.length){const r=rows[i++];try{const pl=await livePlace(r.n,r.a+(r.a.includes(r.c)?'':', '+r.c)+', CA',r.lat,r.lng);
+   if(pl&&pl.rating!=null){r.rt=pl.rating;r.rc=pl.userRatingCount||0;r.rating_src='Google (live)';if(pl.priceLevel&&PRICE[pl.priceLevel])r.p=PRICE[pl.priceLevel];}
+   r._live=true;}catch(e){console.warn('live rating failed',r.n,e);}bump();}};
+ for(let k=0;k<4;k++)worker();rerender();}
 /* roster pop-out panel */
 const rp=document.getElementById('rpanel');let rpDist=null,rpSort='rt';
 function rosterCard(d,r){const q2=encodeURIComponent(r.n+', '+r.a+', CA');const nm2=r.web?`<a href="${r.web}" target="_blank" rel="noopener">${r.n}</a>`:r.n;const src2=(r.src||[]).map(k=>`<a href="${k[1]}" target="_blank" rel="noopener">${k[0]}</a>`).join(' &middot; ');
@@ -324,11 +334,11 @@ function rosterCard(d,r){const q2=encodeURIComponent(r.n+', '+r.a+', CA');const 
 function renderRoster(){const d=DISTRICTS.find(x=>x.n===rpDist);if(!d)return;const rows=(typeof DR!=='undefined'?DR:[]).filter(r=>r.dist===d.n);
  const pr=x=>(x.p||'').length||99;
  const w=x=>x.rt==null?-1:(x.rc||0)<20?x.rt-10:x.rt;const rs=rows.slice().sort((x,y)=>rpSort==='rt'?((w(y)-w(x))||(y.rc||0)-(x.rc||0)||x.n.localeCompare(y.n)):rpSort==='cu'?((x.cu||'zz').localeCompare(y.cu||'zz')||x.n.localeCompare(y.n)):rpSort==='p'?(pr(x)-pr(y)||(y.rt||0)-(x.rt||0)||x.n.localeCompare(y.n)):x.n.localeCompare(y.n));
- document.getElementById('rpTitle').textContent=d.n;document.getElementById('rpSub').textContent=`${rows.length} restaurants, ${d.c}. ${rows.filter(r=>r.rt!=null).length} with a rating. Tap one to see it on the map.`;
+ document.getElementById('rpTitle').textContent=d.n;const pg=LIVE_PROG[d.n];document.getElementById('rpSub').textContent=`${rows.length} restaurants, ${d.c}. ${rows.filter(r=>r.rt!=null).length} with a rating`+(pg&&pg.done<pg.total?`, loading live Google ratings (${pg.done} of ${pg.total})`:rows.some(r=>r._live)?', ratings live from Google':'')+'. Tap one to see it on the map.';
  document.getElementById('rpList').innerHTML=rs.map(r=>`<a data-n="${encodeURIComponent(r.n)}"><span class="nm">${r.n}</span><span class="rt">${r.rt!=null?((r.rc||0)<20?'<span style="color:#9e9e9e">'+r.rt+'</span>':r.rt)+' <small>('+(r.rc!=null?r.rc.toLocaleString():'?')+')</small>':'<small>no rating</small>'}${r.p?' <small>'+r.p+'</small>':''}</span><span class="cu">${r.cu||''}</span></a>`).join('');
  document.querySelectorAll('#rpanel [data-rs]').forEach(b=>b.classList.toggle('on',b.dataset.rs===rpSort));
  document.querySelectorAll('#rpList a').forEach(a=>a.onclick=()=>{const r=rows.find(x=>x.n===decodeURIComponent(a.dataset.n));map.setView([r.lat,r.lng],17);(()=>{const pp=L.popup({maxWidth:300,autoPanPaddingTopLeft:[10,10],autoPanPaddingBottomRight:[10,60]}).setLatLng([r.lat,r.lng]).setContent(rosterCard(d,r));pp._rdata=r;pp.openOn(map);})();if(window.innerWidth<=700)rp.classList.remove('open');});}
-window.openRoster=n=>{rpDist=n;rp.classList.add('open');map.closePopup();renderRoster();if(window.innerWidth<=700)panel.classList.remove('open');};
+window.openRoster=n=>{rpDist=n;rp.classList.add('open');map.closePopup();renderRoster();liveDistrict(n);if(window.innerWidth<=700)panel.classList.remove('open');};
 document.getElementById('rpBack').onclick=()=>{rp.classList.remove('open');panel.classList.add('open');document.getElementById('pind').textContent='tap to hide';};
 document.getElementById('rpDistCard').onclick=()=>{const d=DISTRICTS.find(x=>x.n===rpDist);if(d&&d._grp){const pin=d._grp.getLayers().find(l=>l.getPopup&&l.getPopup()&&l instanceof L.Marker);if(pin){rp.classList.remove('open');pin.openPopup();}}};
 document.getElementById('rpClose').onclick=()=>rp.classList.remove('open');
