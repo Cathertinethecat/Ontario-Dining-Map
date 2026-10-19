@@ -10,10 +10,10 @@
 <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@0.14.1/dist/Leaflet.GoogleMutant.js"></script>
 <script>const GKEY="AIzaSyBv-3fjCEu5UzXlyiA2OGjzyUl3tprLpxY";window.gmReady=function(){window._gmLoaded=true;if(window.onGoogleReady)window.onGoogleReady();};</script>
 <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBv-3fjCEu5UzXlyiA2OGjzyUl3tprLpxY&loading=async&callback=gmReady&v=weekly"></script>
-<script src="district_restaurants.js?v=1792437292"></script>
-<script src="districts.js?v=1792437292"></script>
-<script src="restaurants.js?v=1792437292"></script>
-<script src="la_transit.js?v=1792437292"></script>
+<script src="district_restaurants.js?v=1792437631"></script>
+<script src="districts.js?v=1792437631"></script>
+<script src="restaurants.js?v=1792437631"></script>
+<script src="la_transit.js?v=1792437631"></script>
 <style>
   html,body{height:100%;margin:0;font-family:"Times New Roman",Times,serif;color:#1d1c19;background:#111}
   #map{position:absolute;inset:0}
@@ -174,7 +174,7 @@
       <li>Every $$$ and $$$$ restaurant found within about 10 miles of Ontario plus Pomona, from OpenTable, TripAdvisor, Wanderlog and local press rosters, October 2026 <a href="#dref1" class="cite">[1]</a> <a href="#dref2" class="cite">[2]</a> <a href="#dref3" class="cite">[3]</a>.</li>
       <li>Mid-range ($$) sit-down restaurants in the same ring rated 4.5 or higher with 300+ reviews where a rating could be confirmed.</li>
       <li>Every award-recognized restaurant found across the wider region: Michelin Guide California and Wine Spectator Restaurant Awards; no James Beard recognition found in the region <a href="#dref4" class="cite">[4]</a> <a href="#dref5" class="cite">[5]</a>.</li>
-      <li>When a restaurant card opens, its rating, review count and price are fetched live from Google Places (Google Maps Platform, under the map owner's key) and shown with a link to the Google listing; they are not stored. The snapshot figures in the data files (Google as quoted by Wanderlog, OpenTable, TripAdvisor or Restaurantji, October 2026) remain as a fallback when the live lookup is unavailable <a href="#dref3" class="cite">[3]</a> <a href="#dref1" class="cite">[1]</a> <a href="#dref2" class="cite">[2]</a> <a href="#dref6" class="cite">[6]</a> <a href="#dref12" class="cite">[12]</a>.</li>
+      <li>When a restaurant card opens, its rating, review count, price and current photo are fetched live from Google Places (Text Search and Place Photos) (Google Maps Platform, under the map owner's key) and shown with a link to the Google listing; they are not stored. The snapshot figures in the data files (Google as quoted by Wanderlog, OpenTable, TripAdvisor or Restaurantji, October 2026) remain as a fallback when the live lookup is unavailable <a href="#dref3" class="cite">[3]</a> <a href="#dref1" class="cite">[1]</a> <a href="#dref2" class="cite">[2]</a> <a href="#dref6" class="cite">[6]</a> <a href="#dref12" class="cite">[12]</a>.</li>
       <li>Chains with more than about 20 locations are left out unless they are upscale steakhouse brands.</li>
       <li>Menu, Instagram, Facebook and reservation links and photos come from each restaurant's own site or its listings where found; blanks mean none was found.</li>
       <li>Audit, October 2026: 64 of 69 confirmed open (5 unconfirmed, none closed), no dead links, 55 of 57 ratings confirmed on the cited page.</li>
@@ -206,7 +206,7 @@
       <li id="dref8">Open Charge Map (2026). <i>The Shoppes at Chino Hills charging location (coordinates)</i>. <a href="https://www.openchargemap.org/poi/details/11682" target="_blank" rel="noopener">www.openchargemap.org/poi/details/11682</a></li>
       <li id="dref9">District directories (2026, October): Claremont Village Marketing Group; Downtown Pomona Owners Association; Victoria Gardens; Haven City Market; Historic Downtown Upland; The Shops at Chino Hills; Ontario Mills (Simon). Linked from each district card.</li>
       <li id="dref10">California Board of Equalization, via California Department of Conservation (2026). <i>City boundaries feature layer (Base_BOECities)</i>. ArcGIS REST service. <a href="https://gis.conservation.ca.gov/server/rest/services/Base/Base_BOECities/FeatureServer/0" target="_blank" rel="noopener">gis.conservation.ca.gov/server/rest/services/Base/Base_BOECities/FeatureServer/0</a></li>
-      <li id="dref12">Google (2026). <i>Places API (New), Text Search; Maps JavaScript API</i>. Google Maps Platform. <a href="https://developers.google.com/maps/documentation/places/web-service/text-search" target="_blank" rel="noopener">developers.google.com/maps/documentation/places/web-service/text-search</a></li>
+      <li id="dref12">Google (2026). <i>Places API (New), Text Search and Place Photos; Maps JavaScript API</i>. Google Maps Platform. <a href="https://developers.google.com/maps/documentation/places/web-service/text-search" target="_blank" rel="noopener">developers.google.com/maps/documentation/places/web-service/text-search</a></li>
       <li id="dref11">LA28 (2026). <i>Venues</i>; LA Metro and Metrolink system data, as cited on the Ontario Hotel Map. <a href="https://la28.org/en/games-plan/venues.html" target="_blank" rel="noopener">la28.org/en/games-plan/venues.html</a></li>
     </ol>
   </div>
@@ -228,7 +228,7 @@ let gSat=null,gRoad=null,useGoogle=false;
 function currentBase(){return document.getElementById('sat').checked?(useGoogle?gSat:satGroup):(useGoogle?gRoad:streets);}
 function setBase(){[satGroup,streets,gSat,gRoad].forEach(l=>{if(l&&map.hasLayer(l))map.removeLayer(l);});currentBase().addTo(map);}
 document.getElementById('sat').onchange=setBase;
-window.onGoogleReady=function(){try{if(!L.gridLayer.googleMutant)return;gSat=L.gridLayer.googleMutant({type:'hybrid',maxZoom:20});gRoad=L.gridLayer.googleMutant({type:'roadmap',maxZoom:20});useGoogle=true;setBase();document.querySelectorAll('.leaflet-control-attribution').forEach(a=>a.style.display='');}catch(e){console.warn('Google basemap unavailable',e);}};
+window.onGoogleReady=function(){try{if(!L.gridLayer.googleMutant)return;gSat=L.gridLayer.googleMutant({type:'hybrid',maxZoom:20});gRoad=L.gridLayer.googleMutant({type:'roadmap',maxZoom:20});useGoogle=true;setBase();}catch(e){console.warn('Google basemap unavailable',e);}};
 if(window._gmLoaded)window.onGoogleReady();
 /* official city limits from the CA Board of Equalization city layer, loaded live */
 const cityG=L.layerGroup().addTo(map);
@@ -407,23 +407,31 @@ function foldSections(el){if(!el||el.dataset.folded)return;el.dataset.folded='1'
  const h=el.querySelector('h2');(h&&h.parentNode===el)?h.after(bar):el.prepend(bar);}
 map.on('popupopen',e=>{const el=e.popup.getElement()&&e.popup.getElement().querySelector('.leaflet-popup-content');foldSections(el);const ll=e.popup.getLatLng();if(ll&&window.innerWidth<=700){setTimeout(()=>{const pt=map.latLngToContainerPoint(ll);const h=map.getSize().y;if(pt.y<h*0.62||pt.y>h*0.9)map.panBy([0,pt.y-h*0.78],{animate:true});},60);}});
 
-/* live Google rating on restaurant cards (Places API, New): fetched when a card opens, shown with a Google link, never stored */
+/* live Google data on cards (Places API, New): rating, review count, price and the current photo are fetched when a card opens, shown with a Google link, never stored */
 const PLACE_CACHE={};const PRICE={PRICE_LEVEL_FREE:'Free',PRICE_LEVEL_INEXPENSIVE:'$',PRICE_LEVEL_MODERATE:'$$',PRICE_LEVEL_EXPENSIVE:'$$$',PRICE_LEVEL_VERY_EXPENSIVE:'$$$$'};
-async function livePlace(name,addr,lat,lng){const k=name+'|'+addr;if(PLACE_CACHE[k])return PLACE_CACHE[k];
- const res=await fetch('https://places.googleapis.com/v1/places:searchText',{method:'POST',headers:{'Content-Type':'application/json','X-Goog-Api-Key':GKEY,'X-Goog-FieldMask':'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.priceLevel,places.googleMapsUri,places.businessStatus'},body:JSON.stringify({textQuery:name+', '+addr,maxResultCount:1,locationBias:{circle:{center:{latitude:lat,longitude:lng},radius:1500}}})});
+async function livePlace(name,addr,lat,lng){const k=name+'|'+addr;if(PLACE_CACHE[k]!==undefined)return PLACE_CACHE[k];
+ const res=await fetch('https://places.googleapis.com/v1/places:searchText',{method:'POST',headers:{'Content-Type':'application/json','X-Goog-Api-Key':GKEY,'X-Goog-FieldMask':'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.priceLevel,places.googleMapsUri,places.businessStatus,places.photos'},body:JSON.stringify({textQuery:name+', '+addr,maxResultCount:1,locationBias:{circle:{center:{latitude:lat,longitude:lng},radius:1500}}})});
  if(!res.ok)throw new Error('places '+res.status);const j=await res.json();const pl=(j.places||[])[0]||null;PLACE_CACHE[k]=pl;return pl;}
-function liveRatingInto(el,name,addr,lat,lng){if(!el||el.dataset.live)return;el.dataset.live='1';const kv=el.querySelector('.kv');if(!kv)return;
- const cells=kv.querySelectorAll('div');const rc=cells[0],cc=cells[1],pc=cells[2];
+function esc(t){return String(t||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function livePhotoInto(el,pl){const ph=(pl.photos||[])[0];if(!ph||!ph.name)return;const url=`https://places.googleapis.com/v1/${ph.name}/media?maxWidthPx=640&key=${GKEY}`;
+ let img=el.querySelector('img.hphoto');const fresh=!img;if(!img){img=document.createElement('img');img.className='hphoto';img.alt='';img.loading='lazy';el.insertBefore(img,el.firstChild);}
+ const prev=img.src;img.onerror=function(){if(prev&&prev!==url){img.onerror=function(){img.style.display='none';};img.src=prev;}else img.style.display='none';};img.onload=function(){img.style.display='';};img.src=url;
+ const au=(ph.authorAttributions||[])[0];const cap=document.createElement('div');cap.className='note';cap.style.cssText='margin:-4px 0 6px;font-size:.72rem';cap.innerHTML='Photo: Google Maps'+(au?', <a href="'+esc(au.uri)+'" target="_blank" rel="noopener">'+esc(au.displayName)+'</a>':'')+', loaded live';img.after(cap);}
+function liveRatingInto(el,x){if(!el||el.dataset.live)return;el.dataset.live='1';const kv=el.querySelector('.kv');if(!kv)return;
  const note=document.createElement('div');note.className='note';note.style.margin='2px 0 0';note.innerHTML='<span style="color:#5f5b50">Checking Google for the live rating&hellip;</span>';kv.after(note);
- livePlace(name,addr,lat,lng).then(pl=>{if(!pl||pl.rating==null){note.innerHTML='<span style="color:#5f5b50">Live Google rating not available for this listing; showing the snapshot above.</span>';return;}
-  const sb=rc.querySelector('b'),sv=rc.querySelector('span');const old=sb.textContent;sb.textContent=pl.rating.toFixed(1);sb.style.color='';sv.textContent='Rating (Google, live)';
-  cc.querySelector('b').textContent=(pl.userRatingCount||0).toLocaleString();cc.querySelector('span').textContent='Reviews (Google)';
-  if(pl.priceLevel&&PRICE[pl.priceLevel]){pc.querySelector('b').textContent=PRICE[pl.priceLevel];pc.querySelector('span').textContent='Price (Google)';}
-  const closed=pl.businessStatus&&pl.businessStatus!=='OPERATIONAL';
-  note.innerHTML=`Live from Google Places just now${old&&old!=='?'&&old!==pl.rating.toFixed(1)?` (snapshot on file was ${old})`:''}. <a href="${pl.googleMapsUri}" target="_blank" rel="noopener">View on Google Maps</a>${closed?' <b style="color:#b3412f">Google lists this business as '+pl.businessStatus.toLowerCase().replace(/_/g,' ')+'.</b>':''}`;
- }).catch(e=>{note.innerHTML='<span style="color:#5f5b50">Live Google rating unavailable right now; showing the snapshot above.</span>';console.warn(e);});}
+ livePlace(x.n,x.a,x.lat,x.lng).then(pl=>{if(!pl){note.innerHTML='<span style="color:#5f5b50">No Google listing found for this name and address; figures above are from the sources cited.</span>';return;}
+  livePhotoInto(el,pl);
+  const closed=pl.businessStatus&&pl.businessStatus!=='OPERATIONAL';const gl=`<a href="${esc(pl.googleMapsUri)}" target="_blank" rel="noopener">View on Google Maps</a>`;
+  if(pl.rating==null){note.innerHTML='Google lists this place but shows no rating yet. '+gl;return;}
+  MODE_HOOK(el,kv,note,pl,x,closed,gl);
+ }).catch(e=>{note.innerHTML='<span style="color:#5f5b50">Live Google rating unavailable right now; figures above are from the sources cited.</span>';console.warn(e);});}
 map.on('popupopen',e=>{const p=e.popup;const el=p.getElement()&&p.getElement().querySelector('.leaflet-popup-content');if(!el)return;const src=p._source;let x=null;
- if(src&&src._rdata)x=src._rdata;else if(p._rdata)x=p._rdata;if(!x)return;liveRatingInto(el,x.n,x.a,x.lat,x.lng);});
+ if(src&&src._rdata)x=src._rdata;else if(p._rdata)x=p._rdata;if(!x)return;liveRatingInto(el,x);});
+function MODE_HOOK(el,kv,note,pl,x,closed,gl){const cells=kv.querySelectorAll('div');const rc=cells[0],cc=cells[1],pc=cells[2];
+ const sb=rc.querySelector('b'),sv=rc.querySelector('span');const old=sb.textContent;sb.textContent=pl.rating.toFixed(1);sb.style.color='';sv.textContent='Rating (Google, live)';
+ cc.querySelector('b').textContent=(pl.userRatingCount||0).toLocaleString();cc.querySelector('span').textContent='Reviews (Google)';
+ if(pl.priceLevel&&PRICE[pl.priceLevel]){pc.querySelector('b').textContent=PRICE[pl.priceLevel];pc.querySelector('span').textContent='Price (Google)';}
+ note.innerHTML=`Rating, reviews, price and photo fetched live from Google Places just now${old&&old!=='?'&&old!==pl.rating.toFixed(1)?` (snapshot on file was ${old})`:''}. ${gl}${closed?' <b style="color:#b3412f">Google lists this business as '+pl.businessStatus.toLowerCase().replace(/_/g,' ')+'.</b>':''}`;}
 /* audit stamp on every card */
 const AUDIT_DATE='October 19, 2026';
 function auditStamp(el){if(!el||el.querySelector('.astamp'))return;const d=document.createElement('div');d.className='astamp';
