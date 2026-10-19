@@ -7,10 +7,10 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
-<script src="district_restaurants.js?v=1792434830"></script>
-<script src="districts.js?v=1792434830"></script>
-<script src="restaurants.js?v=1792434830"></script>
-<script src="la_transit.js?v=1792434830"></script>
+<script src="district_restaurants.js?v=1792435695"></script>
+<script src="districts.js?v=1792435695"></script>
+<script src="restaurants.js?v=1792435695"></script>
+<script src="la_transit.js?v=1792435695"></script>
 <style>
   html,body{height:100%;margin:0;font-family:"Times New Roman",Times,serif;color:#1d1c19;background:#111}
   #map{position:absolute;inset:0}
@@ -107,7 +107,12 @@
 <div class="panel" id="panel">
   <h1 id="ptog">Legend <small id="pind">tap for legend &amp; controls</small></h1>
   <div class="body">
-  <p>Upscale restaurants within about 10 miles of Ontario (plus Pomona) rated 4.5 or higher on Google with 200+ reviews, and every award-recognized restaurant across the wider region. Restaurant layers start switched off; turn on Ontario restaurants or a county below to show them. Markers sized by review count and colored by tier; the rating is shown in the circle. Shaded outlines are dining districts, the walkable clusters a visitor would head to for dinner. Tap a marker for details; names link to the restaurant's site.</p>
+  <ul class="bib dp" style="margin:0 0 6px">
+    <li>Upscale restaurants within about 10 miles of Ontario, plus Pomona, and every award-recognized restaurant in the wider region.</li>
+    <li>Restaurant layers start off. Turn on Ontario restaurants or a county below to show them.</li>
+    <li>Dining districts are the walkable clusters a visitor would head to for dinner. Tap a pin for the district card and its full restaurant list.</li>
+    <li>Tap any marker for details. See the map key at the bottom for colors and sizes.</li>
+  </ul>
   <div class="btns"><b style="font-size:.85rem;width:100%">Zoom to area</b>
     <button id="bCity">Ontario</button>
     <button id="bLA">LA region</button>
@@ -149,6 +154,16 @@
     <div id="countyBox" style="width:100%"></div></div>
   <div class="btns" id="distToggles"><label style="width:100%;padding:2px 0"><input type="checkbox" id="tAllDist" checked> <b style="font-size:.85rem">Dining districts</b> <span style="color:#5f5b50">(open one for its full restaurant list; tap a name to see it on the map)</span></label></div>
   <div class="btns" id="cityToggles"><label style="width:100%;padding:2px 0"><input type="checkbox" id="tAllCity" checked> <b style="font-size:.85rem">City limits</b> <span style="color:#5f5b50">(all on/off)</span></label></div>
+  <div class="btns" id="keyBox" style="display:block;border:1px solid #c9c3b3;border-radius:4px;padding:6px 8px;margin-top:6px;background:#f6f3ea">
+    <b style="font-size:.85rem">Map key</b>
+    <div style="font-size:.78rem;line-height:1.5;margin-top:3px"><b>Dining districts</b> (pin and outline color by kind)</div>
+    <div style="font-size:.78rem;line-height:1.5"><span style="color:#e65100;font-weight:700">&#9832;</span> Historic downtown &nbsp; <span style="color:#ad1457;font-weight:700">&#9832;</span> Lifestyle center &nbsp; <span style="color:#00838f;font-weight:700">&#9832;</span> Food hall &nbsp; <span style="color:#546e7a;font-weight:700">&#9832;</span> Regional center</div>
+    <div style="font-size:.78rem;line-height:1.5;margin-top:4px"><b>Restaurants</b> (marker color by tier; number in the circle is the rating)</div>
+    <div style="font-size:.78rem;line-height:1.5"><span style="color:#6b1f7a">&#9679;</span> Award-recognized &nbsp; <span style="color:#b3412f">&#9679;</span> Fine dining $$$$ &nbsp; <span style="color:#c98a1c">&#9679;</span> Upscale $$$ &nbsp; <span style="color:#2f7d4e">&#9679;</span> Mid-range $$</div>
+    <div style="font-size:.78rem;line-height:1.5"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#c98a1c;vertical-align:middle"></span> <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#c98a1c;vertical-align:middle"></span> Bigger marker = more reviews &nbsp; <span style="display:inline-block;width:12px;height:12px;border-radius:50%;border:2px dashed #c98a1c;vertical-align:middle"></span> Dashed = outside Ontario</div>
+    <div style="font-size:.78rem;line-height:1.5"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#c98a1c;color:#fff;font-size:9px;line-height:14px;text-align:center;vertical-align:middle">12</span> City dot: number of restaurants shown; tap to spread &nbsp; <span style="color:#9e9e9e">4.8</span> Grey rating = fewer than 20 reviews</div>
+    <div style="font-size:.78rem;line-height:1.5"><span style="color:#FFD600;font-weight:700">&#9644;</span> City limits, one color per city &nbsp; <span style="color:#9e9e9e;font-weight:700">&#9638;</span> Unincorporated county land</div>
+  </div>
   <p class="note"><a href="#" id="aboutTog">About the data</a></p>
   <div id="about" style="display:none">
     <p class="note" style="margin:6px 0 2px"><b>Restaurants (69 on the main layers).</b></p>
