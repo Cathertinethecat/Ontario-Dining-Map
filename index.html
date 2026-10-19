@@ -7,8 +7,9 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
-<script src="districts.js?v=2"></script>
-<script src="restaurants.js?v=1792398455"></script>
+<script src="district_restaurants.js?v=1792398814"></script>
+<script src="districts.js?v=3"></script>
+<script src="restaurants.js?v=1792398814"></script>
 <script src="la_transit.js?v=1792394945"></script>
 <style>
   html,body{height:100%;margin:0;font-family:"Times New Roman",Times,serif;color:#1d1c19;background:#111}
@@ -77,6 +78,7 @@
   .mk.oth{border:1.5px solid #fff;outline:1.5px dashed #1d1c19}
   .cdot{position:relative}.cdot .mk{position:absolute;left:50%;top:0;transform:translateX(-50%);cursor:pointer}.cdot .ct{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(31,78,121,.92);color:#fff;border-radius:3px;padding:1px 6px;font:italic 11px "Times New Roman",Times,serif;box-shadow:0 1px 3px rgba(0,0,0,.5);cursor:pointer}
 .dpill{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.96);border:2px solid var(--c);border-radius:14px;padding:2px 9px 2px 6px;font:italic 12px "Times New Roman",Times,serif;color:#1f2a3a;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.45);cursor:pointer}.dpill b{display:inline-block;width:16px;height:16px;border-radius:50%;background:var(--c);color:#fff;font:bold 10px/16px "Times New Roman",Times,serif;text-align:center;font-style:normal}
+.dlist{width:100%;font-size:.78rem;line-height:1.5;color:#1f4e79;columns:2;column-gap:8px;margin:2px 0 4px}.dlist a{display:block;text-decoration:none;color:#1f4e79;cursor:pointer;break-inside:avoid}.dlist a:hover{text-decoration:underline}
   .cgather{background:rgba(255,255,255,.95);color:#1f4e79;border:1px solid #1f4e79;border-radius:3px;padding:1px 6px;font:11px "Times New Roman",Times,serif;white-space:nowrap;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.4)}
   .grp.open{display:flex;flex-wrap:wrap;gap:4px}
   .btns>label.sechead{display:flex;align-items:center;width:100%;border:none;background:none;padding:2px 0}
@@ -132,7 +134,7 @@
     <label><input type="checkbox" data-otier="upscale" checked> <span style="color:#c98a1c">&#9679;</span> Upscale</label>
     <label><input type="checkbox" data-otier="mid" checked> <span style="color:#2f7d4e">&#9679;</span> Mid-range, top rated</label>
     <div id="countyBox" style="width:100%"></div></div>
-  <div class="btns" id="distToggles"><label style="width:100%;padding:2px 0"><input type="checkbox" id="tAllDist" checked> <b style="font-size:.85rem">Dining districts</b> <span style="color:#5f5b50">(walkable clusters; tap an outline)</span></label></div>
+  <div class="btns" id="distToggles"><label style="width:100%;padding:2px 0"><input type="checkbox" id="tAllDist" checked> <b style="font-size:.85rem">Dining districts</b> <span style="color:#5f5b50">(open one for its full restaurant list; tap a name to see it on the map)</span></label></div>
   <div class="btns" id="cityToggles"><label style="width:100%;padding:2px 0"><input type="checkbox" id="tAllCity" checked> <b style="font-size:.85rem">City limits</b> <span style="color:#5f5b50">(all on/off)</span></label></div>
   <p class="note"><a href="#" id="aboutTog">About the data</a></p>
   <div id="about" style="display:none">
@@ -214,13 +216,24 @@ const distLayers={};DISTRICTS.forEach(d=>{const col=DKIND[d.kind]||'#777';const 
  const poly=L.polygon(d.poly,{color:col,weight:2.5,dashArray:'4 3',fill:true,fillColor:col,fillOpacity:.22}).addTo(grp);
  const ctr=poly.getBounds().getCenter();const q=encodeURIComponent(d.n.split(' (')[0]+', '+d.c+', CA');
  const nOn=()=>R.filter(x=>inDist(x)===d.n&&passes(x)).length;
- const card=()=>`<h2><a href="${d.web}" target="_blank" rel="noopener">${d.n}</a></h2><p class="addr">${d.c}. ${d.kind}.</p><p class="addr" style="line-height:1.7"><a href="${d.web}" target="_blank" rel="noopener">District site</a> &middot; <a href="${d.city}" target="_blank" rel="noopener">${d.cityl}</a> &middot; <a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">Google Maps</a> &middot; <a href="https://www.google.com/maps/dir/?api=1&destination=${q}" target="_blank" rel="noopener">Directions</a>${d.ig?` &middot; <a href="${d.ig}" target="_blank" rel="noopener">Instagram</a>`:''}</p><div class="kv"><div><b>${nOn()}</b><span>On this map</span></div><div><b style="font-size:1rem">${d.ont.split(',')[1].trim()}</b><span>From Conv. Ctr (${d.ont.split(',')[0]})</span></div><div><b style="font-size:1rem">${d.kind.split(' ')[0]}</b><span>Kind</span></div></div><p class="seas">${d.desc}</p><p class="seas"><i>Anchors</i>${d.anchors}</p><p class="seas"><i>Transit</i>${d.transit}</p><p class="seas"><i>Events</i>${d.events}</p><p class="seas"><i>Parking</i>${d.parking}</p><p class="note">Outline drawn around the restaurant cluster, approximate; drive times are typical off-peak estimates from the Ontario Convention Center. "On this map" counts restaurants inside the outline at the current rating cutoff.</p>`;
+ const card=()=>`${d.img?`<img class="hphoto" src="${d.img}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}<h2><a href="${d.web}" target="_blank" rel="noopener">${d.n}</a></h2><p class="addr">${d.c}. ${d.kind}.</p><p class="addr" style="line-height:1.7"><a href="${d.web}" target="_blank" rel="noopener">District site</a>${d.dir?` &middot; <a href="${d.dir}" target="_blank" rel="noopener">Restaurant directory</a>`:''} &middot; <a href="${d.city}" target="_blank" rel="noopener">${d.cityl}</a> &middot; <a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">Google Maps</a> &middot; <a href="https://www.google.com/maps/dir/?api=1&destination=${q}" target="_blank" rel="noopener">Directions</a>${d.ig?` &middot; <a href="${d.ig}" target="_blank" rel="noopener">Instagram</a>`:''}</p><div class="kv"><div><b>${(typeof DR!=='undefined'?DR.filter(r=>r.dist===d.n).length:0)||nOn()}</b><span>Restaurants</span></div><div><b style="font-size:1rem">${d.ont.split(',')[1].trim()}</b><span>From Conv. Ctr (${d.ont.split(',')[0]})</span></div><div><b style="font-size:1rem">${d.kind.split(' ')[0]}</b><span>Kind</span></div></div><p class="seas">${d.desc}</p><p class="seas"><i>Anchors</i>${d.anchors}</p><p class="seas"><i>Transit</i>${d.transit}</p><p class="seas"><i>Events</i>${d.events}</p><p class="seas"><i>Parking</i>${d.parking}</p><p class="note">Outline drawn around the restaurant cluster, approximate; drive times are typical off-peak estimates from the Ontario Convention Center. "Restaurants" counts every restaurant in the district's roster; zoom in on the district to see them all, or open its list in the legend.</p>`;
  poly.bindTooltip(d.n,{sticky:true}).bindPopup(card,{maxWidth:300,autoPanPaddingTopLeft:[10,10],autoPanPaddingBottomRight:[10,60]});
  const pin=L.marker(ctr,{icon:L.divIcon({className:'',html:`<div class="dpill" style="--c:${col}"><b>&#9832;</b>${d.n.split(' and ')[0].split(' (')[0]}</div>`,iconSize:[10,22],iconAnchor:[5,11]}),zIndexOffset:400}).addTo(grp);
  pin.bindPopup(card,{maxWidth:300,autoPanPaddingTopLeft:[10,10],autoPanPaddingBottomRight:[10,60]});
  distLayers[d.n]=grp.addTo(distG);
- const lab=document.createElement('label');lab.innerHTML=`<input type="checkbox" data-dist="${d.n}" checked> <span style="color:${col};font-weight:700">&#9832;</span> ${d.n.split(' and ')[0].split(' (')[0]} <span style="color:#5f5b50">(${d.c}, ${d.ont.split(',')[1].trim()})</span>`;distTogs.appendChild(lab);
- lab.querySelector('input').onchange=e=>{e.target.checked?grp.addTo(distG):distG.removeLayer(grp);syncDist();};});
+ const rows=(typeof DR!=='undefined'?DR:[]).filter(r=>r.dist===d.n);d._grp=grp;
+ const rcard=r=>{const q2=encodeURIComponent(r.n+', '+r.a+', CA');const nm2=r.web?`<a href="${r.web}" target="_blank" rel="noopener">${r.n}</a>`:r.n;const src2=(r.src||[]).map(k=>`<a href="${k[1]}" target="_blank" rel="noopener">${k[0]}</a>`).join(' &middot; ');
+  return `<h2>${nm2}</h2><p class="addr">${r.a}. ${r.c}. ${r.cu||''} In the ${d.n} district.</p><p class="addr" style="line-height:1.7"><a href="https://www.google.com/maps/search/?api=1&query=${q2}" target="_blank" rel="noopener">Google listing</a> &middot; <a href="https://www.google.com/maps/dir/?api=1&destination=${q2}" target="_blank" rel="noopener">Directions</a></p><div class="kv"><div><b>${r.rt==null?'?':r.rt}</b><span>Rating${r.rating_src?' ('+r.rating_src.replace('Google via Wanderlog','Google')+')':''}</span></div><div><b>${(r.rc||0)?r.rc.toLocaleString():'?'}</b><span>Reviews</span></div><div><b style="font-size:1rem">${r.p||'?'}</b><span>Price</span></div></div><p class="seas"><i>Sources</i>${src2||'District directory'}</p><p class="note">District roster entry: every restaurant listed for the district, any price or rating. Placed by address, approximate.</p>`;};
+ const slug='d_'+d.n.toLowerCase().replace(/[^a-z]+/g,'-');
+ const lab=document.createElement('div');lab.className='oc';lab.innerHTML=`<label style="width:100%;padding:2px 0"><input type="checkbox" id="${slug}" data-dist="${d.n}" checked> <span style="color:${col};font-weight:700">&#9832;</span> <b style="font-size:.85rem">${d.n.split(' and ')[0].split(' (')[0]}</b> <span style="color:#5f5b50">(${d.c}, ${d.ont.split(',')[1].trim()}, ${rows.length} listed)</span></label><div class="btns" style="margin:2px 0 4px;width:100%"><button type="button" data-dz="${d.n}">Zoom to district</button><button type="button" data-sort="az">A to Z</button><button type="button" data-sort="rt">By rating</button></div><div class="dlist"></div>`;distTogs.appendChild(lab);
+ const list=lab.querySelector('.dlist');let sortBy='az';
+ const render=()=>{const rs=rows.slice().sort((x,y)=>sortBy==='rt'?((y.rt||0)-(x.rt||0)||((y.rc||0)-(x.rc||0))||x.n.localeCompare(y.n)):x.n.localeCompare(y.n));
+  list.innerHTML=rs.map(r=>`<a data-i="${rows.indexOf(r)}">${r.n}${r.rt!=null?` <span style="color:#5f5b50">${r.rt}</span>`:''}</a>`).join('')||'<span style="color:#5f5b50">Roster not yet loaded.</span>';
+  list.querySelectorAll('a').forEach(x=>x.onclick=()=>{const r=rows[+x.dataset.i];map.setView([r.lat,r.lng],17);L.popup({maxWidth:300,autoPanPaddingTopLeft:[10,10],autoPanPaddingBottomRight:[10,60]}).setLatLng([r.lat,r.lng]).setContent(rcard(r)).openOn(map);});
+  lab.querySelectorAll('[data-sort]').forEach(bn=>bn.style.fontWeight=bn.dataset.sort===sortBy?'700':'400');};
+ lab.querySelectorAll('[data-sort]').forEach(bn=>bn.onclick=()=>{sortBy=bn.dataset.sort;render();});render();
+ lab.querySelector('input').onchange=e=>{e.target.checked?grp.addTo(distG):distG.removeLayer(grp);syncDist();};
+ lab.querySelector('[data-dz]').onclick=()=>map.fitBounds(poly.getBounds(),{padding:[20,20],maxZoom:17});});
 const distCbs=[...distTogs.querySelectorAll('input[data-dist]')];const distAll=document.getElementById('tAllDist');
 function syncDist(){const k=distCbs.filter(c=>c.checked).length;distAll.checked=k===distCbs.length;distAll.indeterminate=k>0&&k<distCbs.length;}
 distAll.onchange=e=>{const on=e.target.checked;distCbs.forEach(cb=>{if(cb.checked!==on){cb.checked=on;cb.onchange({target:cb});}});syncDist();};
@@ -290,7 +303,7 @@ function makeSection(masterId){const m=document.getElementById(masterId);if(!m)r
  const wrap=document.createElement('div');wrap.className='grp';let n=head.nextSibling;while(n){const nx=n.nextSibling;if(n.nodeType===1||(n.nodeType===3&&n.textContent.trim()))wrap.appendChild(n);n=nx;}box.appendChild(wrap);
  const b=document.createElement('button');b.type='button';b.className='secbtn';b.setAttribute('aria-label','expand');b.textContent='\u25B8';head.insertBefore(b,head.firstChild);
  b.onclick=e=>{e.preventDefault();e.stopPropagation();const o=wrap.classList.toggle('open');b.textContent=o?'\u25BE':'\u25B8';b.setAttribute('aria-label',o?'collapse':'expand');};}
-['tAllOverlays','tLA28','tAllHotels','tAllOther','tAllDist','tAllCity'].forEach(makeSection);Object.keys(COUNTY).forEach(k=>makeSection('oc_'+k.toLowerCase().replace(/ /g,'-')+'_all'));
+['tAllOverlays','tLA28','tAllHotels','tAllOther','tAllDist','tAllCity'].forEach(makeSection);Object.keys(COUNTY).forEach(k=>makeSection('oc_'+k.toLowerCase().replace(/ /g,'-')+'_all'));DISTRICTS.forEach(d=>makeSection('d_'+d.n.toLowerCase().replace(/[^a-z]+/g,'-')));
 </script>
 </body>
 </html>
