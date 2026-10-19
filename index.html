@@ -10,10 +10,10 @@
 <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@0.14.1/dist/Leaflet.GoogleMutant.js"></script>
 <script>const GKEY="AIzaSyBv-3fjCEu5UzXlyiA2OGjzyUl3tprLpxY";window.gmReady=function(){window._gmLoaded=true;if(window.onGoogleReady)window.onGoogleReady();};</script>
 <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBv-3fjCEu5UzXlyiA2OGjzyUl3tprLpxY&loading=async&callback=gmReady&v=weekly"></script>
-<script src="district_restaurants.js?v=1792441221"></script>
-<script src="districts.js?v=1792441221"></script>
-<script src="restaurants.js?v=1792441221"></script>
-<script src="la_transit.js?v=1792441221"></script>
+<script src="district_restaurants.js?v=1792442352"></script>
+<script src="districts.js?v=1792442352"></script>
+<script src="restaurants.js?v=1792442352"></script>
+<script src="la_transit.js?v=1792442352"></script>
 <style>
   html,body{height:100%;margin:0;font-family:"Times New Roman",Times,serif;color:#1d1c19;background:#111}
   #map{position:absolute;inset:0}
@@ -130,6 +130,7 @@
   </div>
   <div class="btns">
     <label><input type="checkbox" id="sat" checked> Satellite</label>
+    <div style="width:100%;font-size:.78rem;margin-top:2px"><a href="#" id="gcheck">Check Google connection</a><div id="gcheckOut" style="color:#5f5b50;white-space:pre-wrap"></div></div>
     <label style="width:100%;padding:2px 0;border:none;background:none"><input type="checkbox" id="tAllOverlays"> <b style="font-size:.85rem">Transit</b> <span style="color:#5f5b50">(Metro rail, Metrolink)</span></label>
     <label><input type="checkbox" id="tRail"> Metro rail</label>
     <label><input type="checkbox" id="tML"> Metrolink</label>
@@ -453,6 +454,16 @@ function MODE_HOOK(el,kv,note,pl,x,closed,gl){const cells=kv.querySelectorAll('d
  cc.querySelector('b').textContent=(pl.userRatingCount||0).toLocaleString();cc.querySelector('span').textContent='Reviews (Google)';
  if(pl.priceLevel&&PRICE[pl.priceLevel]){pc.querySelector('b').textContent=PRICE[pl.priceLevel];pc.querySelector('span').textContent='Price (Google)';}
  note.innerHTML=`Rating, reviews, price and photo fetched live from Google Places just now${old&&old!=='?'&&old!==pl.rating.toFixed(1)?` (snapshot on file was ${old})`:''}. ${gl}${closed?' <b style="color:#b3412f">Google lists this business as '+pl.businessStatus.toLowerCase().replace(/_/g,' ')+'.</b>':''}`;}
+/* self-test: one Places lookup plus basemap status, printed in the legend */
+document.getElementById('gcheck').onclick=async e=>{e.preventDefault();const out=document.getElementById('gcheckOut');out.textContent='Testing...';const lines=[];
+ lines.push('Page: '+location.host+location.pathname);
+ lines.push('Maps JavaScript API: '+(window.google&&google.maps?'loaded':'not loaded')+(useGoogle?', Google basemap on':', using Esri/CARTO fallback'));
+ try{const res=await fetch('https://places.googleapis.com/v1/places:searchText',{method:'POST',headers:{'Content-Type':'application/json','X-Goog-Api-Key':GKEY,'X-Goog-FieldMask':'places.displayName,places.rating,places.userRatingCount'},body:JSON.stringify({textQuery:'Starbucks, Ontario, CA',maxResultCount:1})});
+  const txt=await res.text();let j={};try{j=JSON.parse(txt);}catch(_){}
+  if(res.ok){const pl=(j.places||[])[0];lines.push('Places API (New): OK, HTTP '+res.status+(pl?', found '+(pl.displayName&&pl.displayName.text)+' rated '+pl.rating+' ('+pl.userRatingCount+' reviews)':', no result'));}
+  else lines.push('Places API (New): HTTP '+res.status+' '+((j.error&&(j.error.status+': '+j.error.message))||txt.slice(0,300)));
+ }catch(err){lines.push('Places API (New): request failed before Google answered ('+err.message+')');}
+ out.textContent=lines.join('\n');};
 /* audit stamp on every card */
 const AUDIT_DATE='October 19, 2026';
 function auditStamp(el){if(!el||el.querySelector('.astamp'))return;const d=document.createElement('div');d.className='astamp';
