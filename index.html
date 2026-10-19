@@ -7,10 +7,10 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
-<script src="district_restaurants.js?v=1792400386"></script>
-<script src="districts.js?v=1792400386"></script>
-<script src="restaurants.js?v=1792400386"></script>
-<script src="la_transit.js?v=1792400386"></script>
+<script src="district_restaurants.js?v=1792400463"></script>
+<script src="districts.js?v=1792400463"></script>
+<script src="restaurants.js?v=1792400463"></script>
+<script src="la_transit.js?v=1792400463"></script>
 <style>
   html,body{height:100%;margin:0;font-family:"Times New Roman",Times,serif;color:#1d1c19;background:#111}
   #map{position:absolute;inset:0}
@@ -103,7 +103,7 @@
 <div class="panel" id="panel">
   <h1 id="ptog">Legend <small id="pind">tap for legend &amp; controls</small></h1>
   <div class="body">
-  <p>Upscale restaurants within about 10 miles of Ontario (plus Pomona) rated 4.5 or higher on Google with 200+ reviews, and every award-recognized restaurant across the wider region. Markers sized by review count and colored by tier; the rating is shown in the circle. Shaded outlines are dining districts, the walkable clusters a visitor would head to for dinner. Tap a marker for details; names link to the restaurant's site.</p>
+  <p>Upscale restaurants within about 10 miles of Ontario (plus Pomona) rated 4.5 or higher on Google with 200+ reviews, and every award-recognized restaurant across the wider region. Restaurant layers start switched off; turn on Ontario restaurants or a county below to show them. Markers sized by review count and colored by tier; the rating is shown in the circle. Shaded outlines are dining districts, the walkable clusters a visitor would head to for dinner. Tap a marker for details; names link to the restaurant's site.</p>
   <div class="btns"><b style="font-size:.85rem;width:100%">Zoom to area</b>
     <button id="bCity">Ontario</button>
     <button id="bLA">LA region</button>
@@ -321,6 +321,7 @@ document.getElementById('ocExpand').onclick=()=>OC_OTHER.forEach(c=>{if(!ocState
 document.getElementById('ocCollapse').onclick=()=>OC_OTHER.forEach(c=>{if(!ocState[c])return;ocState[c].expanded=false;refreshCity(c);});
 document.getElementById('onExpand').onclick=()=>{if(ocState['Ontario'])ocState['Ontario'].expanded=true;refreshCity('Ontario');};
 document.getElementById('onCollapse').onclick=()=>{if(ocState['Ontario'])ocState['Ontario'].expanded=false;refreshCity('Ontario');};
+tierCbs.forEach(cb=>cb.checked=false);syncAll();ocCityCbs.forEach(cb=>cb.checked=false);syncOc();
 applyRating();
 map.fitBounds([[33.925,-117.683],[34.095,-117.52]]);
 /* collapsible legend sections */
