@@ -90,7 +90,7 @@
 <div class="panel" id="panel">
   <h1 id="ptog">Legend <small id="pind">tap for legend &amp; controls</small></h1>
   <div class="body">
-  <p>Restaurants rated 4.5 or higher, sized by review count and colored by price tier. Tap a marker for details; names link to the restaurant's site.</p>
+  <p>Upscale restaurants within about 10 miles of Ontario (plus Pomona) rated 4.5 or higher on Google with 200+ reviews, and every award-recognized restaurant across the wider region. Markers sized by review count and colored by tier; the rating is shown in the circle. Tap a marker for details; names link to the restaurant's site.</p>
   <div class="btns"><b style="font-size:.85rem;width:100%">Zoom to area</b>
     <button id="bCity">Ontario</button>
     <button id="bLA">LA region</button>
@@ -109,6 +109,7 @@
     <label><input type="checkbox" data-vt="D"> <span style="color:#9e9e9e;font-size:.85em">&#9673;</span> Under 5,000</label>
     <label><input type="checkbox" data-vt="U"> <span style="color:#777;font-size:.85em">&#9711;</span> Not yet published</label></div>
   <div class="btns" id="tierToggles"><label style="width:100%;padding:2px 0"><input type="checkbox" id="tAllHotels" checked> <b style="font-size:.85rem">Ontario restaurants</b> <span style="color:#5f5b50">(all tiers on/off)</span></label>
+    <label><input type="checkbox" data-tier="award" checked> <span style="color:#6b1f7a">&#9679;</span> Award-recognized</label>
     <label><input type="checkbox" data-tier="fine" checked> <span style="color:#b3412f">&#9679;</span> Fine dining ($$$$)</label>
     <label><input type="checkbox" data-tier="upscale" checked> <span style="color:#c98a1c">&#9679;</span> Upscale ($$$)</label>
     <label><input type="checkbox" data-tier="mid" checked> <span style="color:#2f7d4e">&#9679;</span> Mid-range, top rated ($$)</label>
@@ -117,6 +118,7 @@
   <div class="btns" id="otherToggles"><label style="width:100%;padding:2px 0"><input type="checkbox" id="tAllOther" checked> <b style="font-size:.85rem">Other cities' restaurants</b> <span style="color:#5f5b50">(by county, nearest first)</span></label>
     <div class="btns" style="margin-top:4px;width:100%"><button type="button" id="ocExpand">Spread all</button><button type="button" id="ocCollapse">Gather all</button></div>
     <div style="width:100%;color:#5f5b50;font-size:.8rem;margin-top:4px">Tier filter for all other cities</div>
+    <label><input type="checkbox" data-otier="award" checked> <span style="color:#6b1f7a">&#9679;</span> Award-recognized</label>
     <label><input type="checkbox" data-otier="fine" checked> <span style="color:#b3412f">&#9679;</span> Fine dining</label>
     <label><input type="checkbox" data-otier="upscale" checked> <span style="color:#c98a1c">&#9679;</span> Upscale</label>
     <label><input type="checkbox" data-otier="mid" checked> <span style="color:#2f7d4e">&#9679;</span> Mid-range, top rated</label>
@@ -130,7 +132,7 @@
   </div>
 </div>
 <script>
-const CAT={fine:{c:'#b3412f',l:'Fine dining ($$$$)'},upscale:{c:'#c98a1c',l:'Upscale ($$$)'},mid:{c:'#2f7d4e',l:'Mid-range, top rated ($$)'}};
+const CAT={award:{c:'#6b1f7a',l:'Award-recognized'},fine:{c:'#b3412f',l:'Fine dining ($$$$)'},upscale:{c:'#c98a1c',l:'Upscale ($$$)'},mid:{c:'#2f7d4e',l:'Mid-range, top rated ($$)'}};
 const LM=[["Ontario Convention Center",34.0650,-117.5995],["Ontario Mills",34.0750,-117.5510],["Toyota Arena",34.0755,-117.5612],["ONT Field / Ontario Sports Empire",34.0192,-117.6033],["Downtown Ontario",34.0630,-117.6510]];
 const panel=document.getElementById('panel');
 document.getElementById('aboutTog').onclick=e=>{e.preventDefault();const a=document.getElementById('about');a.style.display=a.style.display==='none'?'block':'none';};
@@ -218,7 +220,7 @@ R.forEach(x=>{const d=Math.round(14+Math.sqrt(x.rc||50)*0.55);
  const src=(x.src||[]).map(k=>`<a href="${k[1]}" target="_blank" rel="noopener">${k[0]}</a>`).join(' &middot; ');
  const nm=x.web?`<a href="${x.web}" target="_blank" rel="noopener">${x.n}</a>`:x.n;
  const yelp=x.yelp?`<a href="${x.yelp}" target="_blank" rel="noopener">Yelp page</a>`:'';
- L.marker([x.lat,x.lng],{icon}).addTo(OG[x.c][x.t]).bindPopup(`<h2>${nm}</h2><p class="addr">${x.a}. ${x.c}. ${x.cu||''}<br><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.n+', '+x.a+', CA')}" target="_blank" rel="noopener">Open in Google Maps</a>${yelp?' &middot; '+yelp:''}</p>${x.badge?`<span class="badge">${x.badge}</span>`:''}<div class="kv"><div><b>${x.rt}</b><span>Rating</span></div><div><b>${(x.rc||0).toLocaleString()}</b><span>Reviews</span></div><div><b style="font-size:1rem">${x.p||CAT[x.t].l}</b><span>Price</span></div></div>${x.note?`<p class="seas"><i>Notes</i>${x.note}</p>`:''}<p class="seas"><i>Sources</i>${src||'Not yet sourced'}</p><p class="note">Rating, review count and price tier as shown by the source cited at the time of collection; they change. Placed by address, approximate.</p>`,{maxWidth:300,autoPanPaddingTopLeft:[10,10],autoPanPaddingBottomRight:[10,60]});});
+ L.marker([x.lat,x.lng],{icon}).addTo(OG[x.c][x.t]).bindPopup(`<h2>${nm}</h2><p class="addr">${x.a}. ${x.c}. ${x.cu||''}<br><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.n+', '+x.a+', CA')}" target="_blank" rel="noopener">Open in Google Maps</a>${yelp?' &middot; '+yelp:''}</p>${x.award?`<a class="badge" href="${x.award_url||'#'}" target="_blank" rel="noopener" style="text-decoration:none">${x.award}</a>`:''}<div class="kv"><div><b>${x.rt}</b><span>Rating</span></div><div><b>${(x.rc||0).toLocaleString()}</b><span>Reviews</span></div><div><b style="font-size:1rem">${x.p||CAT[x.t].l}</b><span>Price</span></div></div>${x.note?`<p class="seas"><i>Notes</i>${x.note}</p>`:''}<p class="seas"><i>Sources</i>${src||'Not yet sourced'}</p><p class="note">Rating, review count and price tier as shown by the source cited at the time of collection; they change. Placed by address, approximate.</p>`,{maxWidth:300,autoPanPaddingTopLeft:[10,10],autoPanPaddingBottomRight:[10,60]});});
 const otCbs=[...ocBox.querySelectorAll('input[data-otier]')];const ocCityCbs=[...countyBox.querySelectorAll('input[data-ocity]')];const ocAll=document.getElementById('tAllOther');
 const cityCb=c=>ocCityCbs.find(x=>x.dataset.ocity===c);
 function setBox(cb,n,len){cb.checked=n===len;cb.indeterminate=n>0&&n<len;}
