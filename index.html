@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ontario Dining Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+<script src="restaurants.js?v=1"></script>
+<script src="la_transit.js?v=1792394945"></script>
+<style>
+  html,body{height:100%;margin:0;font-family:"Times New Roman",Times,serif;color:#1d1c19;background:#111}
+  #map{position:absolute;inset:0}
+  .panel{position:absolute;left:10px;bottom:28px;z-index:600;background:rgba(255,255,255,.94);border-radius:4px;padding:8px 12px;max-width:min(320px,calc(100vw - 20px));box-shadow:0 1px 6px rgba(0,0,0,.35)}
+  .panel h1{font-size:1.05rem;margin:0;line-height:1.2;cursor:pointer;display:flex;justify-content:space-between;gap:10px;align-items:center}
+  .panel h1 small{font-size:.8rem;color:#5f5b50;font-weight:400}
+  .panel .body{display:none;margin-top:6px;max-height:60vh;overflow:auto}
+  .panel.open .body{display:block}
+  .leaflet-popup-pane{z-index:1200}
+  .leaflet-popup{margin-bottom:28px}
+  .panel p{margin:0;font-size:.85rem;color:#5f5b50}
+  .panel .btns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .panel button,.panel label{font:inherit;font-size:.85rem;border:1px solid #c9c3b2;background:#fff;border-radius:3px;padding:4px 8px;cursor:pointer}
+  .leaflet-popup-content{font-family:"Times New Roman",Times,serif;font-size:15px;line-height:1.4;margin:12px 14px}
+  .leaflet-popup-content h2{font-size:1.1rem;margin:0 0 2px}
+  .leaflet-popup-content h2 a{color:#1f4e79}
+  .hphoto{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:3px;margin:0 0 8px;background:#efece2}
+  .leaflet-popup-content .addr{color:#5f5b50;font-size:.9rem;margin:0 0 8px}
+  .kv{display:flex;gap:8px;margin:0 0 8px}
+  .kv div{background:#efece2;border-radius:3px;padding:5px 8px;flex:1}
+  .kv b{display:block;font-size:1.3rem;line-height:1.1}
+  .kv span{font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:#5f5b50}
+  .seas{border-top:1px solid #c9c3b2;padding-top:6px;margin:0;font-size:.9rem}
+  .seas i{display:block;margin-bottom:2px}
+  .note{font-size:.78rem;color:#5f5b50;margin:6px 0 0}
+  .sch{margin:4px 0 0;font-size:.82rem}.sch summary{cursor:pointer;color:#1f4e79}.sch div{max-height:150px;overflow:auto;margin-top:4px;line-height:1.35}.sch span{display:block}
+  .rt{width:100%;border-collapse:collapse;font-size:.88rem;margin:2px 0 4px}
+  .rt td{padding:2px 0;border-bottom:1px solid #efece2}
+  #tierToggles label,#cityToggles label{display:block;width:100%;border:none;padding:2px 0;background:none}
+  .badge{display:inline-block;font-size:.75rem;background:#1f4e79;color:#fff;border-radius:3px;padding:2px 7px;margin:0 0 8px}
+  .badge.off{background:#efece2;color:#5f5b50;border:1px solid #c9c3b2}
+  .mk{background:#b3412f;color:#fff;border:1.5px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font:700 11px "Times New Roman",Times,serif;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+  .mk.plan{background:#fff;color:#b3412f;border:1.5px dashed #b3412f}
+  .vm{width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid #d4a017;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+  .wvm{width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid #6a3fb5;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+  .wvm::after{content:'';position:absolute;inset:5px;border-radius:50%;background:#6a3fb5}
+  .sem{width:22px;height:22px;border-radius:4px;background:#fff;border:3px solid #2f7d4e;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+  .sem::after{content:'';position:absolute;inset:5px;border-radius:2px;background:#2f7d4e}
+  .splan{display:block;width:100%;height:auto;border-radius:3px;margin:0 0 8px;background:#efece2}
+  .vm::after{content:'';position:absolute;inset:5px;border-radius:50%;background:#d4a017}
+  .vm.cA{width:30px;height:30px;border-width:4px}.vm.cB{width:24px;height:24px}.vm.cC{width:20px;height:20px}.vm.cD{width:18px;height:18px;border-color:#b0b0b0}.vm.cD::after{background:#b0b0b0}.vm.cU{width:18px;height:18px;border-color:#fff;border-style:dashed}.vm.cU::after{background:#fff}
+  #venueToggles label{display:block;width:100%;border:none;padding:2px 0;background:none}
+  .lm{background:rgba(31,78,121,.9);color:#fff;border-radius:3px;padding:2px 6px;font:italic 11px "Times New Roman",Times,serif;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.5)}
+  @media (max-width:600px), (pointer:coarse) and (max-width:900px){
+    .panel{left:6px;right:6px;bottom:22px;max-width:none;padding:6px 10px}
+    .panel h1{font-size:.95rem}
+    .panel h1 small{font-size:.72rem}
+    .panel .body{max-height:42vh;margin-top:4px}
+    .panel p{font-size:.78rem}
+    .panel button,.panel label{font-size:.78rem;padding:3px 7px}
+    .panel .btns{gap:4px;margin-top:6px}
+    #tierToggles label,#connToggles label,#cityToggles label,.oc label,#venueToggles label{width:calc(50% - 4px);padding:1px 0}
+    #tierToggles label[style],#cityToggles label[style],.oc label[style],#otherToggles>label,#venueToggles label[style],#connToggles b{width:100%}
+    .leaflet-popup-content{font-size:13.5px;margin:10px 12px}
+    .leaflet-popup-content h2{font-size:1rem}
+    .kv b{font-size:1.1rem}
+    .seas,.rt{font-size:.82rem}
+    .note{font-size:.72rem}
+    .lm{font-size:10px;padding:1px 4px}
+  }
+  .secbtn{font:inherit;font-size:.9rem;border:none;background:none;padding:0 6px 0 0;cursor:pointer;color:#1f4e79;line-height:1}
+  .grp{display:none;width:100%}
+  .oc{width:100%;margin-top:2px}
+  .oc label{display:inline-block;width:calc(50% - 4px);border:none;padding:2px 0;background:none}.oc label[style]{width:100%}
+  .mk.oth{border:1.5px solid #fff;outline:1.5px dashed #1d1c19}
+  .cdot{position:relative}.cdot .mk{position:absolute;left:50%;top:0;transform:translateX(-50%);cursor:pointer}.cdot .ct{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(31,78,121,.92);color:#fff;border-radius:3px;padding:1px 6px;font:italic 11px "Times New Roman",Times,serif;box-shadow:0 1px 3px rgba(0,0,0,.5);cursor:pointer}
+  .cgather{background:rgba(255,255,255,.95);color:#1f4e79;border:1px solid #1f4e79;border-radius:3px;padding:1px 6px;font:11px "Times New Roman",Times,serif;white-space:nowrap;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  .grp.open{display:flex;flex-wrap:wrap;gap:4px}
+  .btns>label.sechead{display:flex;align-items:center;width:100%;border:none;background:none;padding:2px 0}
+  .bib{margin:4px 0 0;padding:0 0 0 1.6em;font-size:.74rem;color:#5f5b50;line-height:1.35}
+  .bib li{margin:0 0 4px}
+  .bib i{font-style:italic}
+  .bib a{color:#1f4e79;word-break:break-all}
+  .cite{color:#1f4e79;text-decoration:none;font-size:.9em}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="panel" id="panel">
+  <h1 id="ptog">Legend <small id="pind">tap for legend &amp; controls</small></h1>
+  <div class="body">
+  <p>Restaurants rated 4.5 or higher, sized by review count and colored by price tier. Tap a marker for details; names link to the restaurant's site.</p>
+  <div class="btns"><b style="font-size:.85rem;width:100%">Zoom to area</b>
+    <button id="bCity">Ontario</button>
+    <button id="bLA">LA region</button>
+    <button id="bLA28">LA28 venues</button>
+  </div>
+  <div class="btns">
+    <label><input type="checkbox" id="sat" checked> Satellite</label>
+    <label style="width:100%;padding:2px 0;border:none;background:none"><input type="checkbox" id="tAllOverlays"> <b style="font-size:.85rem">Transit</b> <span style="color:#5f5b50">(Metro rail, Metrolink)</span></label>
+    <label><input type="checkbox" id="tRail"> Metro rail</label>
+    <label><input type="checkbox" id="tML"> Metrolink</label>
+  </div>
+  <div class="btns" id="venueToggles"><label style="width:100%;padding:2px 0"><input type="checkbox" id="tLA28"> <b style="font-size:.85rem">LA28 venues</b> <span style="color:#5f5b50">by spectator capacity</span></label>
+    <label><input type="checkbox" data-vt="A"> <span style="color:#d4a017;font-size:1.2em">&#9673;</span> 50,000 and up</label>
+    <label><input type="checkbox" data-vt="B"> <span style="color:#d4a017">&#9673;</span> 15,000 to 49,999</label>
+    <label><input type="checkbox" data-vt="C"> <span style="color:#d4a017;font-size:.85em">&#9673;</span> 5,000 to 14,999</label>
+    <label><input type="checkbox" data-vt="D"> <span style="color:#9e9e9e;font-size:.85em">&#9673;</span> Under 5,000</label>
+    <label><input type="checkbox" data-vt="U"> <span style="color:#777;font-size:.85em">&#9711;</span> Not yet published</label></div>
+  <div class="btns" id="tierToggles"><label style="width:100%;padding:2px 0"><input type="checkbox" id="tAllHotels" checked> <b style="font-size:.85rem">Ontario restaurants</b> <span style="color:#5f5b50">(all tiers on/off)</span></label>
+    <label><input type="checkbox" data-tier="fine" checked> <span style="color:#b3412f">&#9679;</span> Fine dining ($$$$)</label>
+    <label><input type="checkbox" data-tier="upscale" checked> <span style="color:#c98a1c">&#9679;</span> Upscale ($$$)</label>
+    <label><input type="checkbox" data-tier="mid" checked> <span style="color:#2f7d4e">&#9679;</span> Mid-range, top rated ($$)</label>
+    <div class="btns" style="margin-top:4px;width:100%"><button type="button" id="onExpand">Spread Ontario</button><button type="button" id="onCollapse">Gather Ontario</button></div>
+  </div>
+  <div class="btns" id="otherToggles"><label style="width:100%;padding:2px 0"><input type="checkbox" id="tAllOther" checked> <b style="font-size:.85rem">Other cities' restaurants</b> <span style="color:#5f5b50">(by county, nearest first)</span></label>
+    <div class="btns" style="margin-top:4px;width:100%"><button type="button" id="ocExpand">Spread all</button><button type="button" id="ocCollapse">Gather all</button></div>
+    <div style="width:100%;color:#5f5b50;font-size:.8rem;margin-top:4px">Tier filter for all other cities</div>
+    <label><input type="checkbox" data-otier="fine" checked> <span style="color:#b3412f">&#9679;</span> Fine dining</label>
+    <label><input type="checkbox" data-otier="upscale" checked> <span style="color:#c98a1c">&#9679;</span> Upscale</label>
+    <label><input type="checkbox" data-otier="mid" checked> <span style="color:#2f7d4e">&#9679;</span> Mid-range, top rated</label>
+    <div id="countyBox" style="width:100%"></div></div>
+  <div class="btns" id="cityToggles"><label style="width:100%;padding:2px 0"><input type="checkbox" id="tAllCity" checked> <b style="font-size:.85rem">City limits</b> <span style="color:#5f5b50">(all on/off)</span></label></div>
+  <p class="note"><a href="#" id="aboutTog">About the data</a></p>
+  <div id="about" style="display:none">
+    <p class="note" id="aboutText"><b>Restaurants.</b> Data not yet loaded. This map will list restaurants rated 4.5 or higher in each city, with price tier, category, rating and review count from the source cited on each card.</p>
+    <p class="note"><b>Boundaries and transit.</b> City limits are the official boundaries from the Board of Equalization layer, loaded live; gray hatched areas are unincorporated county land. LA28 venues and rail are the same layers as the Ontario Hotel Map.</p>
+  </div>
+  </div>
+</div>
+<script>
+const CAT={fine:{c:'#b3412f',l:'Fine dining ($$$$)'},upscale:{c:'#c98a1c',l:'Upscale ($$$)'},mid:{c:'#2f7d4e',l:'Mid-range, top rated ($$)'}};
+const LM=[["Ontario Convention Center",34.0650,-117.5995],["Ontario Mills",34.0750,-117.5510],["Toyota Arena",34.0755,-117.5612],["ONT Field / Ontario Sports Empire",34.0192,-117.6033],["Downtown Ontario",34.0630,-117.6510]];
+const panel=document.getElementById('panel');
+document.getElementById('aboutTog').onclick=e=>{e.preventDefault();const a=document.getElementById('about');a.style.display=a.style.display==='none'?'block':'none';};
+document.getElementById('ptog').onclick=()=>{panel.classList.toggle('open');document.getElementById('pind').textContent=panel.classList.contains('open')?'tap to hide':'tap for legend & controls';};
+const map=L.map('map',{zoomControl:true}).setView([34.03,-117.60],12);
+map.on('popupopen',()=>{panel.classList.remove('open');document.getElementById('pind').textContent='tap for legend & controls';});
+const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Imagery &copy; Esri, Maxar, Earthstar Geographics'});
+const lab=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:19});
+const streets=L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors &copy; CARTO'});
+const satGroup=L.layerGroup([sat,lab]).addTo(map);
+document.getElementById('sat').onchange=e=>{if(e.target.checked){map.removeLayer(streets);satGroup.addTo(map);}else{map.removeLayer(satGroup);streets.addTo(map);}};
+/* official city limits from the CA Board of Equalization city layer, loaded live */
+const cityG=L.layerGroup().addTo(map);
+const CITY_STYLE={'Ontario':{color:'#FFD600',weight:5},'Rancho Cucamonga':{color:'#FF3D00',weight:5},'Upland':{color:'#FF4FA3',weight:3,dashArray:'6 4'},'Montclair':{color:'#00E5FF',weight:3,dashArray:'6 4'},'Pomona':{color:'#00E676',weight:3,dashArray:'6 4'},'Chino':{color:'#D500F9',weight:3,dashArray:'6 4'},'Fontana':{color:'#AEEA00',weight:3,dashArray:'6 4'},'Eastvale':{color:'#B388FF',weight:3,dashArray:'6 4'},'Claremont':{color:'#82B1FF',weight:3,dashArray:'6 4'},'San Bernardino':{color:'#FFAB40',weight:3,dashArray:'6 4'},'Riverside':{color:'#18FFFF',weight:3,dashArray:'6 4'},'Corona':{color:'#F8BBD0',weight:3,dashArray:'6 4'},'Chino Hills':{color:'#CE93D8',weight:3,dashArray:'6 4'},'Jurupa Valley':{color:'#A7FFEB',weight:3,dashArray:'6 4'},'Norco':{color:'#FFE57F',weight:3,dashArray:'6 4'},'Moreno Valley':{color:'#FF8A80',weight:3,dashArray:'6 4'},'Perris':{color:'#80D8FF',weight:3,dashArray:'6 4'},'Redlands':{color:'#CCFF90',weight:3,dashArray:'6 4'},'Rialto':{color:'#EA80FC',weight:3,dashArray:'6 4'},'Colton':{color:'#FFD180',weight:3,dashArray:'6 4'},'Loma Linda':{color:'#84FFFF',weight:3,dashArray:'6 4'},'Highland':{color:'#F4FF81',weight:3,dashArray:'6 4'},'Yucaipa':{color:'#B9F6CA',weight:3,dashArray:'6 4'},'Grand Terrace':{color:'#FF9E80',weight:3,dashArray:'6 4'},'El Monte':{color:'#80CBC4',weight:3,dashArray:'6 4'},'South El Monte':{color:'#FFCC80',weight:3,dashArray:'6 4'},'Baldwin Park':{color:'#C5E1A5',weight:3,dashArray:'6 4'},'West Covina':{color:'#F48FB1',weight:3,dashArray:'6 4'},'Covina':{color:'#B39DDB',weight:3,dashArray:'6 4'},'Azusa':{color:'#FFF59D',weight:3,dashArray:'6 4'},'Glendora':{color:'#80DEEA',weight:3,dashArray:'6 4'},'San Dimas':{color:'#FFAB91',weight:3,dashArray:'6 4'},'La Verne':{color:'#E6EE9C',weight:3,dashArray:'6 4'},'Irwindale':{color:'#BCAAA4',weight:3,dashArray:'6 4'},'La Puente':{color:'#9FA8DA',weight:3,dashArray:'6 4'},'Industry':{color:'#B0BEC5',weight:3,dashArray:'6 4'},'Walnut':{color:'#A5D6A7',weight:3,dashArray:'6 4'},'Diamond Bar':{color:'#EF9A9A',weight:3,dashArray:'6 4'}};
+const cityLayers={};const cityTogs=document.getElementById('cityToggles');
+Object.keys(CITY_STYLE).forEach(n=>{cityLayers[n]=L.layerGroup().addTo(cityG);const lab=document.createElement('label');lab.innerHTML=`<input type="checkbox" data-city="${n}" checked> <span style="color:${CITY_STYLE[n].color};font-weight:700;text-shadow:0 0 2px #555">${CITY_STYLE[n].dashArray?'&#9476;':'&#9644;'}</span> ${n}`;cityTogs.appendChild(lab);lab.querySelector('input').onchange=e=>{e.target.checked?cityLayers[n].addTo(cityG):cityG.removeLayer(cityLayers[n]);syncCity();};});
+const cityCbs=[...cityTogs.querySelectorAll('input[data-city]')];const cityAll=document.getElementById('tAllCity');
+function syncCity(){const k=cityCbs.filter(c=>c.checked).length;cityAll.checked=k===cityCbs.length;cityAll.indeterminate=k>0&&k<cityCbs.length;}
+/* unincorporated county land: county polygons minus every incorporated city in the map area */
+const unincG=L.layerGroup().addTo(map);const unLab=document.createElement('label');unLab.innerHTML='<input type="checkbox" id="tUninc" checked> <span style="color:#9e9e9e;font-weight:700">&#9638;</span> Unincorporated county land';cityTogs.appendChild(unLab);
+unLab.querySelector('input').onchange=e=>e.target.checked?unincG.addTo(map):map.removeLayer(unincG);
+(async()=>{try{if(!window.turf)return;const bb=[-118.08,33.72,-116.98,34.22];const q=encodeURIComponent;
+ const cities=await fetch(`https://gis.conservation.ca.gov/server/rest/services/Base/Base_BOECities/FeatureServer/0/query?where=1%3D1&geometry=${bb.join(',')}&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=CITY&outSR=4326&geometryPrecision=5&f=geojson`).then(r=>r.json());
+ const counties=await fetch(`https://gis.conservation.ca.gov/server/rest/services/Base/Base_Counties/FeatureServer/0/query?where=${q("COUNTY_NAME IN ('Los Angeles','San Bernardino','Riverside')")}&outFields=COUNTY_NAME&outSR=4326&geometryPrecision=5&f=geojson`).then(r=>r.json());
+ const box=turf.bboxPolygon(bb);
+ counties.features.forEach(cf=>{let poly=turf.bboxClip(cf,bb);if(!poly||!poly.geometry||turf.area(poly)<1)return;
+  cities.features.forEach(c=>{try{const d=turf.difference(poly,c);if(d)poly=d;}catch(e){}});
+  if(!poly)return;L.geoJSON(poly,{style:{color:'#9e9e9e',weight:1,dashArray:'3 3',fill:true,fillColor:'#9e9e9e',fillOpacity:.22}}).bindTooltip('Unincorporated '+cf.properties.COUNTY_NAME+' County',{sticky:true}).addTo(unincG);});
+}catch(e){console.warn('unincorporated layer failed',e);}})();
+cityAll.onchange=e=>{const on=e.target.checked;cityCbs.forEach(cb=>{if(cb.checked!==on){cb.checked=on;cb.onchange({target:cb});}});syncCity();};
+fetch("https://gis.conservation.ca.gov/server/rest/services/Base/Base_BOECities/FeatureServer/0/query?where=CITY%20IN%20('Rancho%20Cucamonga','Ontario','Upland','Montclair','Fontana','Chino','Eastvale','Pomona','Claremont','San%20Bernardino','Riverside','Corona','Chino%20Hills','Jurupa%20Valley','Norco','Moreno%20Valley','Perris','Redlands','Rialto','Colton','Loma%20Linda','Highland','Yucaipa','Grand%20Terrace','El%20Monte','South%20El%20Monte','Baldwin%20Park','West%20Covina','Covina','Azusa','Glendora','San%20Dimas','La%20Verne','Irwindale','La%20Puente','Industry','Walnut','Diamond%20Bar')&outFields=CITY&outSR=4326&f=geojson")
+ .then(r=>r.json()).then(gj=>{
+   L.geoJSON(gj,{style:f=>{const st=CITY_STYLE[f.properties.CITY]||{color:'#fff',weight:2,dashArray:'6 4'};return Object.assign({fill:true,fillColor:st.color,fillOpacity:.15,opacity:.95},st);},
+     onEachFeature:(f,l)=>{l.bindTooltip(f.properties.CITY+' city limits',{sticky:true});if(CITY_STYLE[f.properties.CITY]&&CITY_STYLE[f.properties.CITY].weight===5)l.bringToBack();}}).eachLayer(l=>{const n=l.feature.properties.CITY;(cityLayers[n]||cityG).addLayer(l);if(CITY_STYLE[n]&&CITY_STYLE[n].weight===5)l.bringToBack();const n2=n==='Industry'?'City of Industry':n;if(window.setCityCenter&&CITY_CENTER_FROM_LIMITS.includes(n2)){let c;try{c=window.turf?turf.centerOfMass(l.feature).geometry.coordinates:null;}catch(e){}const ll=c?[c[1],c[0]]:l.getBounds().getCenter();setCityCenter(n2,ll);}});
+ }).catch(()=>{L.polygon([[34.095,-117.683],[34.095,-117.52],[33.925,-117.52],[33.925,-117.65],[34.0,-117.65],[34.0,-117.683]],{color:'#FFD600',weight:3,dashArray:'6 4',fill:true,fillColor:'#FFD600',fillOpacity:.15}).addTo(cityLayers['Ontario']);});
+
+LM.forEach(l=>L.marker([l[1],l[2]],{icon:L.divIcon({className:'',html:`<div class="lm">${l[0]}</div>`,iconAnchor:[0,0]}),interactive:false}).addTo(map));
+/* regional layers */
+const railG=L.layerGroup(), mlG=L.layerGroup(), laG=L.layerGroup(),laT={A:L.layerGroup().addTo(laG),B:L.layerGroup().addTo(laG),C:L.layerGroup().addTo(laG),D:L.layerGroup().addTo(laG),U:L.layerGroup().addTo(laG)}, stG=L.layerGroup();
+TRANSIT.metro.forEach(l=>{L.polyline(l.pts,{color:'#fff',weight:7,opacity:.7}).addTo(railG);L.polyline(l.pts,{color:l.c,weight:4}).addTo(railG).bindTooltip('Metro '+l.n,{sticky:true});});
+TRANSIT.metrolink.forEach(l=>{L.polyline(l.pts,{color:'#fff',weight:6,opacity:.6}).addTo(mlG);L.polyline(l.pts,{color:'#444',weight:3,dashArray:'8 6'}).addTo(mlG).bindTooltip(l.n,{sticky:true});});
+TRANSIT.stations.forEach(s=>L.circleMarker([s[1],s[2]],{radius:3,color:'#222',weight:1,fillColor:'#fff',fillOpacity:1}).bindTooltip(s[0]).addTo(stG));
+TRANSIT.mlStations.forEach(s=>L.circleMarker([s[1],s[2]],{radius:4,color:'#444',weight:1.5,fillColor:'#fff',fillOpacity:1}).bindTooltip('Metrolink: '+s[0]).addTo(stG));
+map.on('zoomend',()=>{const on=map.getZoom()>=12&&document.getElementById('tRail').checked;if(on&&!map.hasLayer(stG))stG.addTo(map);if(!on&&map.hasLayer(stG))map.removeLayer(stG);});
+const SCHED_URL='https://la28.org/content/dam/latwentyeight/competition-schedule-imagery/uploaded-july-29-oly-version-4-0/LA28OlympicGamesCompetitionScheduleByEventV4.0.pdf';
+function schedHTML(slug){const c=TRANSIT.schedule&&TRANSIT.schedule[slug];if(!c)return '';
+ let t=`<p class="seas"><i>Olympic competition</i>${c.range}, 2028 &middot; ${c.days} day${c.days>1?'s':''} &middot; ${c.sessions} session${c.sessions>1?'s':''}`;
+ const x=[];if(c.medal)x.push(`${c.medal} medal`);if(c.late)x.push(`${c.late} ending 22:00 or later`);if(c.nt)x.push(`${c.nt} not ticketed`);if(c.tbd)x.push(`${c.tbd} time TBD`);
+ if(x.length)t+=` (${x.join(', ')})`;
+ if(c.sports.length>1)t+='<br>'+c.sports.map(s=>`${s[0]}: ${s[1]}, ${s[2]} session${s[2]>1?'s':''}`).join('<br>');
+ t+=`<details class="sch"><summary>Session list</summary><div>${c.list.map(l=>`<span>${l[0]} &middot; ${l[1]} &middot; ${l[2]?l[2]+', ':''}${l[3]}</span>`).join('')}</div></details></p>`;return t;}
+TRANSIT.venues.forEach(v=>{const u='https://la28.org/en/games-plan/venues/'+v[0]+'.html';const cp=(TRANSIT.cap&&TRANSIT.cap[v[0]])||[null,'U',''];const sz={A:30,B:24,C:20,D:18,U:18}[cp[1]];L.marker([v[3],v[4]],{icon:L.divIcon({className:'',html:`<div class="vm c${cp[1]}" style="position:relative"></div>`,iconSize:[sz,sz],iconAnchor:[sz/2,sz/2],popupAnchor:[0,-sz/2]})}).addTo(laT[cp[1]]).bindPopup(`<h2><a href="${u}" target="_blank" rel="noopener">${v[1]}</a></h2><p class="addr">${v[2]}. LA28 venue.<br><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(v[1]+', '+v[2].replace(' Zone','')+', California')}" target="_blank" rel="noopener">Open in Google Maps</a></p><p class="seas"><i>Olympic</i>${v[5]||'None listed'}</p>${v[6]?`<p class="seas"><i>Paralympic</i>${v[6]}</p>`:''}<p class="seas"><i>Spectator capacity</i>${cp[0]?cp[0].toLocaleString()+(cp[2]?' ('+cp[2]+')':''):'Not yet published'+(cp[2]?' ('+cp[2]+')':'')}</p>${schedHTML(v[0])}<p class="seas"><i>Source</i><a href="${u}" target="_blank" rel="noopener">LA28 venue page</a> &middot; <a href="https://la28.org/en/games-plan/venues.html" target="_blank" rel="noopener">LA28 venues plan</a> &middot; <a href="${SCHED_URL}" target="_blank" rel="noopener">LA28 competition schedule v4.0</a> &middot; <a href="https://en.wikipedia.org/wiki/Venues_of_the_2028_Summer_Olympics_and_Paralympics" target="_blank" rel="noopener">Capacity: Wikipedia, LA28 venues</a></p><p class="note">Sports as listed by LA28; marker placed at the venue site, approximate. Olympic dates and sessions from LA28's competition schedule by event, version 4.0 (July 29, 2026), subject to change; Paralympic schedule not yet published. LA28 publishes no capacities or attendance figures; the capacity shown is the operator or reported Games figure as compiled on Wikipedia (Oct 2026) and is a proxy, not an LA28 number.</p>`,{maxWidth:300});});
+const tog=(id,g)=>document.getElementById(id).onchange=e=>{e.target.checked?g.addTo(map):map.removeLayer(g);if(id==='tRail'&&!e.target.checked)map.removeLayer(stG);};
+tog('tRail',railG);tog('tML',mlG);
+const vtCbs=[...document.querySelectorAll('#venueToggles input[data-vt]')];const vtAll=document.getElementById('tLA28');
+function syncVt(){const n=vtCbs.filter(c=>c.checked).length;vtAll.checked=n===vtCbs.length;vtAll.indeterminate=n>0&&n<vtCbs.length;}
+vtCbs.forEach(cb=>cb.onchange=e=>{const g=laT[cb.dataset.vt];e.target.checked?g.addTo(laG):laG.removeLayer(g);syncVt();});
+vtAll.onchange=e=>{const on=e.target.checked;vtCbs.forEach(cb=>{cb.checked=on;const g=laT[cb.dataset.vt];on?g.addTo(laG):laG.removeLayer(g);});syncVt();};
+const ovCbs=['tRail','tML'].map(id=>document.getElementById(id));const ovAll=document.getElementById('tAllOverlays');
+function syncOv(){const n=ovCbs.filter(c=>c.checked).length;ovAll.checked=n===ovCbs.length;ovAll.indeterminate=n>0&&n<ovCbs.length;}
+ovCbs.forEach(cb=>cb.addEventListener('change',syncOv));
+ovAll.onchange=e=>{const on=e.target.checked;ovCbs.forEach(cb=>{if(cb.checked!==on){cb.checked=on;cb.onchange({target:cb});}});syncOv();};
+document.getElementById('bLA').onclick=()=>map.fitBounds([[33.55,-118.60],[34.45,-116.60]]);
+document.getElementById('bLA28').onclick=()=>{const vs=TRANSIT.venues.filter(v=>v[3]>33.5&&v[4]>-118.7);map.fitBounds(vs.map(v=>[v[3],v[4]]),{padding:[20,20]});};
+document.getElementById('bCity').onclick=()=>map.fitBounds([[33.925,-117.683],[34.095,-117.52]]);
+/* restaurants: R array in restaurants.js. Fields: c city, t tier (fine/upscale/mid), n name, a address, cu cuisine, rt rating, rc review count, p price string, lat, lng, web, yelp, src [[label,url]], note, badge */
+const tierCbs=[...document.querySelectorAll('#tierToggles input[data-tier]')];
+const ONT=[34.0633,-117.6509];const dist=c=>{const hs=R.filter(x=>x.c===c);const la=hs.reduce((a,x)=>a+x.lat,0)/hs.length,ln=hs.reduce((a,x)=>a+x.lng,0)/hs.length;return Math.hypot(la-ONT[0],(ln-ONT[1])*0.83);};
+const COUNTY={'San Bernardino County':['Rancho Cucamonga','Upland','Montclair','Chino','Chino Hills','Fontana','Rialto','Colton','San Bernardino','Loma Linda','Redlands','Yucaipa','Highland','Grand Terrace'],
+ 'Riverside County':['Eastvale','Jurupa Valley','Norco','Corona','Riverside','Moreno Valley','Perris'],
+ 'Los Angeles County':['Pomona','Claremont','El Monte','South El Monte','Baldwin Park','West Covina','Azusa','Glendora','San Dimas','La Puente','City of Industry','Hacienda and Rowland Heights','Walnut','Diamond Bar','Covina','La Verne','Irwindale']};
+Object.keys(COUNTY).forEach(k=>COUNTY[k]=COUNTY[k].filter(c=>R.some(x=>x.c===c)).sort((a,b)=>dist(a)-dist(b)));
+const OC_OTHER=[].concat(...Object.values(COUNTY));const OC_ORDER=['Ontario',...OC_OTHER];const CITY_CENTER_FROM_LIMITS=OC_ORDER.filter(c=>c!=='Chino');
+const OG={};OC_ORDER.forEach(c=>{OG[c]={};Object.keys(CAT).forEach(t=>OG[c][t]=L.layerGroup());});const TG=OG['Ontario'];
+const countyBox=document.getElementById('countyBox');const CSTATE={};
+Object.keys(COUNTY).forEach(k=>{const slug=k.toLowerCase().replace(/ /g,'-');const cities=COUNTY[k];const n=cities.reduce((a,c)=>a+R.filter(x=>x.c===c).length,0);
+ const div=document.createElement('div');div.className='oc';div.id='oc_'+slug;
+ div.innerHTML=`<label style="width:100%;padding:2px 0"><input type="checkbox" id="oc_${slug}_all" checked> <b style="font-size:.85rem">${k}</b> <span style="color:#5f5b50">(${cities.length} cities, ${n} restaurants)</span></label><div class="btns" style="margin:2px 0 4px;width:100%"><button type="button" data-cx="${k}">Spread</button><button type="button" data-cg="${k}">Gather</button></div>`+cities.map(c=>`<label><input type="checkbox" data-ocity="${c}" checked> ${c} <span style="color:#5f5b50">(${R.filter(x=>x.c===c).length})</span></label>`).join('');
+ countyBox.appendChild(div);CSTATE[k]={all:div.querySelector('#oc_'+slug+'_all'),cbs:[...div.querySelectorAll('input[data-ocity]')]};
+ div.querySelector('[data-cx]').onclick=()=>cities.forEach(c=>{if(ocState[c]){ocState[c].expanded=true;refreshCity(c);}});
+ div.querySelector('[data-cg]').onclick=()=>cities.forEach(c=>{if(ocState[c]){ocState[c].expanded=false;refreshCity(c);}});});
+const ocBox=document.getElementById('otherToggles');
+R.forEach(x=>{const d=Math.round(14+Math.sqrt(x.rc||50)*0.55);
+ const icon=L.divIcon({className:'',html:`<div class="mk${x.c==='Ontario'?'':' oth'}" style="width:${d}px;height:${d}px;background:${CAT[x.t].c}">${x.rt}</div>`,iconSize:[d,d],iconAnchor:[d/2,d/2],popupAnchor:[0,-d/2]});
+ const src=(x.src||[]).map(k=>`<a href="${k[1]}" target="_blank" rel="noopener">${k[0]}</a>`).join(' &middot; ');
+ const nm=x.web?`<a href="${x.web}" target="_blank" rel="noopener">${x.n}</a>`:x.n;
+ const yelp=x.yelp?`<a href="${x.yelp}" target="_blank" rel="noopener">Yelp page</a>`:'';
+ L.marker([x.lat,x.lng],{icon}).addTo(OG[x.c][x.t]).bindPopup(`<h2>${nm}</h2><p class="addr">${x.a}. ${x.c}. ${x.cu||''}<br><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.n+', '+x.a+', CA')}" target="_blank" rel="noopener">Open in Google Maps</a>${yelp?' &middot; '+yelp:''}</p>${x.badge?`<span class="badge">${x.badge}</span>`:''}<div class="kv"><div><b>${x.rt}</b><span>Rating</span></div><div><b>${(x.rc||0).toLocaleString()}</b><span>Reviews</span></div><div><b style="font-size:1rem">${x.p||CAT[x.t].l}</b><span>Price</span></div></div>${x.note?`<p class="seas"><i>Notes</i>${x.note}</p>`:''}<p class="seas"><i>Sources</i>${src||'Not yet sourced'}</p><p class="note">Rating, review count and price tier as shown by the source cited at the time of collection; they change. Placed by address, approximate.</p>`,{maxWidth:300,autoPanPaddingTopLeft:[10,10],autoPanPaddingBottomRight:[10,60]});});
+const otCbs=[...ocBox.querySelectorAll('input[data-otier]')];const ocCityCbs=[...countyBox.querySelectorAll('input[data-ocity]')];const ocAll=document.getElementById('tAllOther');
+const cityCb=c=>ocCityCbs.find(x=>x.dataset.ocity===c);
+function setBox(cb,n,len){cb.checked=n===len;cb.indeterminate=n>0&&n<len;}
+function syncOc(){Object.keys(COUNTY).forEach(k=>{const st=CSTATE[k];setBox(st.all,st.cbs.filter(x=>x.checked).length,st.cbs.length);});setBox(ocAll,ocCityCbs.filter(x=>x.checked).length,ocCityCbs.length);}
+const ocState={};const cdG=L.layerGroup().addTo(map);
+OC_ORDER.forEach(city=>{const hs=R.filter(x=>x.c===city);if(!hs.length){ocState[city]=null;return;}const rc=hs.reduce((a,x)=>a+(x.rc||0),0);
+ const lat=hs.reduce((a,x)=>a+x.lat,0)/hs.length,lng=hs.reduce((a,x)=>a+x.lng,0)/hs.length;
+ const byT={};hs.forEach(x=>byT[x.t]=(byT[x.t]||0)+1);const top=Object.keys(byT).sort((a,b)=>byT[b]-byT[a])[0]||'upscale';
+ const d=Math.min(48,Math.round(18+Math.sqrt(hs.length)*5));const w=Math.max(d,160);
+ const dot=L.marker([lat,lng],{icon:L.divIcon({className:'',html:`<div class="cdot" style="width:${w}px;height:${d+22}px"><div class="mk${city==='Ontario'?'':' oth'}" style="width:${d}px;height:${d}px;background:${CAT[top].c}">${hs.length}</div><div class="ct" style="top:${d+2}px">${city} &middot; ${hs.length} restaurants</div></div>`,iconSize:[w,d+22],iconAnchor:[w/2,d/2]}),zIndexOffset:500});
+ dot.bindTooltip(`${city}: ${hs.length} restaurants rated 4.5+, ${rc.toLocaleString()} reviews. Tap to spread.`,{direction:'top',offset:[0,-d/2]});
+ const lbl=L.marker([lat,lng],{icon:L.divIcon({className:'',html:`<div class="cgather">${city}: gather restaurants</div>`,iconSize:[160,18],iconAnchor:[80,9]}),zIndexOffset:500});
+ dot.on('click',()=>{ocState[city].expanded=true;refreshCity(city);});lbl.on('click',()=>{ocState[city].expanded=false;refreshCity(city);});
+ ocState[city]={expanded:false,dot,lbl};});
+window.setCityCenter=(city,ll)=>{const st=ocState[city];if(!st)return;st.dot.setLatLng(ll);st.lbl.setLatLng(ll);};
+function refreshCity(city){const st=ocState[city];if(!st)return;
+ const cbs=city==='Ontario'?tierCbs:otCbs;const key=city==='Ontario'?'tier':'otier';
+ const on=(city==='Ontario'||cityCb(city).checked)&&cbs.some(c=>c.checked);const showDot=on&&!st.expanded,showLbl=on&&st.expanded;
+ showDot?st.dot.addTo(cdG):cdG.removeLayer(st.dot);showLbl?st.lbl.addTo(cdG):cdG.removeLayer(st.lbl);
+ cbs.forEach(cb=>{const g=OG[city][cb.dataset[key]];(on&&st.expanded&&cb.checked)?g.addTo(map):map.removeLayer(g);});}
+const allCb=document.getElementById('tAllHotels');
+function syncAll(){const n=tierCbs.filter(c=>c.checked).length;allCb.checked=n===tierCbs.length;allCb.indeterminate=n>0&&n<tierCbs.length;}
+tierCbs.forEach(cb=>cb.onchange=()=>{refreshCity('Ontario');syncAll();});
+allCb.onchange=e=>{const on=e.target.checked;tierCbs.forEach(cb=>{cb.checked=on;});refreshCity('Ontario');syncAll();};
+otCbs.forEach(cb=>cb.onchange=()=>OC_OTHER.forEach(refreshCity));
+ocCityCbs.forEach(cb=>cb.onchange=()=>{refreshCity(cb.dataset.ocity);syncOc();});
+Object.keys(COUNTY).forEach(k=>CSTATE[k].all.onchange=e=>{const on=e.target.checked;CSTATE[k].cbs.forEach(x=>{x.checked=on;refreshCity(x.dataset.ocity);});syncOc();});
+ocAll.onchange=e=>{const on=e.target.checked;ocCityCbs.forEach(x=>{x.checked=on;refreshCity(x.dataset.ocity);});syncOc();};
+document.getElementById('ocExpand').onclick=()=>OC_OTHER.forEach(c=>{if(!ocState[c])return;ocState[c].expanded=true;refreshCity(c);});
+document.getElementById('ocCollapse').onclick=()=>OC_OTHER.forEach(c=>{if(!ocState[c])return;ocState[c].expanded=false;refreshCity(c);});
+document.getElementById('onExpand').onclick=()=>{if(ocState['Ontario'])ocState['Ontario'].expanded=true;refreshCity('Ontario');};
+document.getElementById('onCollapse').onclick=()=>{if(ocState['Ontario'])ocState['Ontario'].expanded=false;refreshCity('Ontario');};
+OC_ORDER.forEach(refreshCity);
+map.fitBounds([[33.925,-117.683],[34.095,-117.52]]);
+/* collapsible legend sections */
+function makeSection(masterId){const m=document.getElementById(masterId);if(!m)return;const head=m.closest('label');const box=head.parentNode;head.classList.add('sechead');
+ const wrap=document.createElement('div');wrap.className='grp';let n=head.nextSibling;while(n){const nx=n.nextSibling;if(n.nodeType===1||(n.nodeType===3&&n.textContent.trim()))wrap.appendChild(n);n=nx;}box.appendChild(wrap);
+ const b=document.createElement('button');b.type='button';b.className='secbtn';b.setAttribute('aria-label','expand');b.textContent='\u25B8';head.insertBefore(b,head.firstChild);
+ b.onclick=e=>{e.preventDefault();e.stopPropagation();const o=wrap.classList.toggle('open');b.textContent=o?'\u25BE':'\u25B8';b.setAttribute('aria-label',o?'collapse':'expand');};}
+['tAllOverlays','tLA28','tAllHotels','tAllOther','tAllCity'].forEach(makeSection);Object.keys(COUNTY).forEach(k=>makeSection('oc_'+k.toLowerCase().replace(/ /g,'-')+'_all'));
+</script>
+</body>
+</html>
